@@ -1,0 +1,31 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{isabelle,isabellesym}
+
+
+%this should be the last package used
+\usepackage{pdfsetup}
+
+% urls in roman style, theory text in math-similar italics
+\urlstyle{rm}
+\isabellestyle{it}
+
+\begin{document}
+
+\title{Harmonic numbers are not integers, except for the trivial case of $1$}
+\author{Jos\'e Manuel Rodr\'iguez Caballero}
+\maketitle
+
+\begin{abstract}
+This article provides a formalization of the following classical result proved by L. Taeisinger \cite{theisinger1915bemerkung} in 1915: for $n \geq 2$, the harmonic number $$1 + \frac{1}{2} + \frac{1}{3} + \frac{1}{4} + \frac{1}{5} + ... + \frac{1}{n}$$
+is not an integer.
+\end{abstract}
+
+\tableofcontents
+
+\input{session}
+
+
+\bibliographystyle{abbrv}
+\bibliography{root}
+
+\end{document}
