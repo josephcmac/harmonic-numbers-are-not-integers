@@ -99,20 +99,305 @@ lemma integers_pval:
   using integers_pval_D integers_pval_I 
   by blast 
 
+lemma pval_unit_dvd_I:
+  \<open>prime p \<Longrightarrow> x \<noteq> 0  \<Longrightarrow> pval p x = 0 \<Longrightarrow> 
+       \<not>(p dvd (fst (quotient_of x)))
+     \<and> \<not>(p dvd (snd (quotient_of x)))\<close>
+proof-
+  assume \<open>prime p\<close> and \<open>x \<noteq> 0\<close> and \<open>pval p x = 0\<close>
+  have \<open>pval p x = (multiplicity p (fst (quotient_of x))) - (multiplicity p (snd (quotient_of x)))\<close>
+    using \<open>pval p x = 0\<close> pval_def 
+    by auto
+  hence \<open>(multiplicity p (fst (quotient_of x))) = (multiplicity p (snd (quotient_of x)))\<close>
+    using \<open>pval p x = 0\<close>
+    by (simp add: pval_def)
+  show ?thesis
+  proof(rule classical)
+    assume \<open>\<not> (\<not>(p dvd (fst (quotient_of x))) \<and> \<not>(p dvd (snd (quotient_of x))))\<close>
+    hence \<open>(p dvd (fst (quotient_of x))) \<or> (p dvd (snd (quotient_of x)))\<close>
+      by blast
+    have \<open>(p dvd (fst (quotient_of x))) \<and> (p dvd (snd (quotient_of x)))\<close>      
+    proof(cases \<open>p dvd (fst (quotient_of x))\<close>)
+      case True
+      moreover have \<open>\<not> is_unit (int p)\<close>
+        using \<open>prime p\<close> 
+        by auto
+      moreover have \<open>fst (quotient_of x) \<noteq> 0\<close>
+      proof(rule classical)
+        assume \<open>\<not> ( fst (quotient_of x) \<noteq> 0 )\<close>
+        hence \<open>fst (quotient_of x) = 0\<close>
+          by blast
+        show ?thesis
+          by (metis Fract_of_int_quotient Zero_rat_def \<open>x \<noteq> 0\<close>  eq_rat(3) prod.collapse 
+              quotient_of_div)          
+      qed
+      ultimately have \<open>multiplicity p (fst (quotient_of x)) \<ge> 1\<close>
+        using multiplicity_geI[where n = 1 and p = p and x = "fst (quotient_of x)"]
+        by simp
+      hence \<open>multiplicity p (snd (quotient_of x)) \<ge> 1\<close>
+        using \<open>multiplicity (int p) (fst (quotient_of x)) = multiplicity (int p) (snd (quotient_of x))\<close> 
+        by linarith
+      hence \<open>p dvd (snd (quotient_of x))\<close>
+        using le_numeral_extra(2) not_dvd_imp_multiplicity_0 ord_le_eq_trans 
+        by blast
+      thus ?thesis
+        by (simp add: True) 
+    next
+      case False
+      hence \<open>p dvd (snd (quotient_of x))\<close>
+        using \<open>int p dvd fst (quotient_of x) \<or> int p dvd snd (quotient_of x)\<close> 
+        by auto
+      moreover have \<open>\<not> is_unit (int p)\<close>
+        using \<open>prime p\<close> 
+        by auto
+      moreover have \<open>snd (quotient_of x) \<noteq> 0\<close>
+        by (metis less_int_code(1) quotient_of_denom_pos')      
+      ultimately have \<open>multiplicity p (snd (quotient_of x)) \<ge> 1\<close>
+        using multiplicity_geI[where n = 1 and p = p and x = "snd (quotient_of x)"]
+        by simp
+      hence \<open>multiplicity p (fst (quotient_of x)) \<ge> 1\<close>
+        using \<open>multiplicity (int p) (fst (quotient_of x)) = multiplicity (int p) (snd (quotient_of x))\<close> 
+        by linarith
+      hence \<open>p dvd (fst (quotient_of x))\<close>
+        using le_numeral_extra(2) not_dvd_imp_multiplicity_0 ord_le_eq_trans 
+        by blast
+      thus ?thesis
+        by (simp add: False) 
+    qed
+    moreover have \<open>coprime (fst (quotient_of x)) (snd (quotient_of x))\<close>
+      using Rat.quotient_of_coprime
+      by simp
+    ultimately show ?thesis
+      by (meson \<open>prime p\<close> not_coprimeI not_prime_unit prime_nat_int_transfer)       
+  qed
+qed
+
+lemma pval_unit_dvd_D:
+  \<open>prime p \<Longrightarrow> x \<noteq> 0 
+     \<Longrightarrow> \<not>(p dvd (fst (quotient_of x)))
+     \<Longrightarrow> \<not>(p dvd (snd (quotient_of x)))
+     \<Longrightarrow> pval p x = 0\<close>
+proof-
+  assume \<open>prime p\<close> and \<open>x \<noteq> 0\<close> and \<open>\<not>(p dvd (fst (quotient_of x)))\<close> 
+    and \<open>\<not>(p dvd (snd (quotient_of x)))\<close>
+  have \<open>multiplicity p (fst (quotient_of x)) = 0\<close>
+    using  \<open>\<not>(p dvd (fst (quotient_of x)))\<close>
+    by (simp add: not_dvd_imp_multiplicity_0)
+  moreover have \<open>multiplicity p (snd (quotient_of x)) = 0\<close>
+    using  \<open>\<not>(p dvd (snd (quotient_of x)))\<close>
+    by (simp add: not_dvd_imp_multiplicity_0)
+  ultimately show ?thesis
+    by (simp add: pval_def) 
+qed
+
+lemma pval_unit_dvd:
+  \<open>prime p \<Longrightarrow> x \<noteq> 0 \<Longrightarrow> (
+       \<not>(p dvd (fst (quotient_of x)))
+     \<and> \<not>(p dvd (snd (quotient_of x)))) \<longleftrightarrow> pval p x = 0\<close>
+  using pval_unit_dvd_D pval_unit_dvd_I 
+  by blast
+
+lemma pval_composition_of_units:
+  \<open>prime p \<Longrightarrow> u \<noteq> 0 \<Longrightarrow> v \<noteq> 0 \<Longrightarrow> pval p u = 0 \<Longrightarrow> pval p v = 0 \<Longrightarrow> pval p (u * v) = 0\<close>
+proof-
+  assume \<open>prime p\<close> and \<open>u \<noteq> 0\<close> and \<open>v \<noteq> 0\<close> and \<open>pval p u = 0\<close> and \<open>pval p v = 0\<close>
+  have \<open>\<not>(p dvd (fst (quotient_of u)))\<close>
+    using \<open>pval p u = 0\<close> pval_unit_dvd_I \<open>prime p\<close> \<open>u \<noteq> 0\<close> 
+    by blast
+  moreover have \<open>\<not>(p dvd (fst (quotient_of v)))\<close>
+    using \<open>pval p v = 0\<close> pval_unit_dvd_I \<open>prime p\<close> \<open>v \<noteq> 0\<close> 
+    by blast
+  ultimately have \<open>\<not>(p dvd ((fst (quotient_of u))*(fst (quotient_of v))))\<close>
+    by (meson \<open>prime p\<close> prime_dvd_multD prime_nat_int_transfer)
+  have \<open>\<not>(p dvd (snd (quotient_of u)))\<close>
+    using \<open>pval p u = 0\<close> pval_unit_dvd_I \<open>prime p\<close> \<open>u \<noteq> 0\<close> 
+    by blast
+  moreover have \<open>\<not>(p dvd (snd (quotient_of v)))\<close>
+    using \<open>pval p v = 0\<close> pval_unit_dvd_I \<open>prime p\<close> \<open>v \<noteq> 0\<close> 
+    by blast
+  ultimately have \<open>\<not>(p dvd ((snd (quotient_of u))*(snd (quotient_of v))))\<close>
+    by (meson \<open>prime p\<close> prime_dvd_multD prime_nat_int_transfer)
+  have \<open>u * v =  ((fst (quotient_of u))*(fst (quotient_of v))) /
+                 ((snd (quotient_of u))*(snd (quotient_of v)))\<close>
+  proof-
+    have \<open>u = (fst (quotient_of u)) / (snd (quotient_of u))\<close>
+    proof -
+      have f1: "u = rat_of_int (fst (quotient_of u)) / rat_of_int (snd (quotient_of u))"
+        by (meson prod.exhaust_sel quotient_of_div)
+      have "rat_of_int (snd (quotient_of u)) \<noteq> 0"
+        by (metis (no_types) \<open>\<not> int p dvd snd (quotient_of u)\<close> dvd_0_right of_int_eq_0_iff)
+      then show ?thesis
+        using f1 by (metis (full_types) nonzero_of_rat_divide of_rat_of_int_eq of_real_divide of_real_of_int_eq)
+    qed
+    moreover have \<open>v = (fst (quotient_of v)) / (snd (quotient_of v))\<close>
+    proof -
+      have f1: "v = rat_of_int (fst (quotient_of v)) / rat_of_int (snd (quotient_of v))"
+        by (meson prod.exhaust_sel quotient_of_div)
+      have "rat_of_int (snd (quotient_of v)) \<noteq> 0"
+        by (metis \<open>\<not> int p dvd snd (quotient_of v)\<close> dvd_0_right of_int_eq_0_iff)
+      then show ?thesis
+        using f1 by (metis (full_types) nonzero_of_rat_divide of_rat_of_int_eq of_real_divide of_real_of_int_eq)
+    qed      
+    ultimately show ?thesis
+      by (simp add: of_rat_mult) 
+  qed
+  hence \<open>u * v =  Fract ((fst (quotient_of u))*(fst (quotient_of v))) 
+                 ((snd (quotient_of u))*(snd (quotient_of v)))\<close>
+    by (metis (no_types, lifting) \<open>u \<noteq> 0\<close> \<open>v \<noteq> 0\<close> divide_eq_0_iff divisors_zero of_int_0_eq_iff of_rat_0 of_rat_eq_iff of_rat_rat of_real_divide of_real_of_int_eq)
+  define d where \<open>d = gcd ((fst (quotient_of u))*(fst (quotient_of v))) ((snd (quotient_of u))*(snd (quotient_of v)))\<close>
+  define z::\<open>int*int\<close> where \<open>z = ( ((fst (quotient_of u))*(fst (quotient_of v))) div d, 
+                                  ((snd (quotient_of u))*(snd (quotient_of v))) div d )\<close>
+
+  have \<open>u * v =  Fract (fst z) (snd z)\<close>
+    unfolding z_def
+    by (simp add: Fract_coprime \<open>u * v = Fract (fst (quotient_of u) * fst (quotient_of v)) (snd (quotient_of u) * snd (quotient_of v))\<close> d_def)
+  moreover have \<open>snd z > 0\<close>
+  proof-
+    have \<open>snd (quotient_of u) > 0\<close>
+      by (simp add: quotient_of_denom_pos')
+    moreover have \<open>snd (quotient_of v) > 0\<close>
+      by (simp add: quotient_of_denom_pos')      
+    moreover have \<open>d \<noteq> 0\<close>
+      unfolding d_def
+      using \<open>\<not> int p dvd fst (quotient_of u) * fst (quotient_of v)\<close> by auto
+    ultimately show ?thesis 
+      unfolding z_def
+      by (smt \<open>u * v = Fract (fst z) (snd z)\<close> \<open>u \<noteq> 0\<close> \<open>v \<noteq> 0\<close> d_def gcd_pos_int mult_pos_pos no_zero_divisors pos_imp_zdiv_neg_iff rat_number_collapse(6) snd_conv z_def)
+  qed
+  moreover have \<open>coprime (fst z) (snd z)\<close>
+    unfolding z_def
+    using \<open>\<not> int p dvd fst (quotient_of u) * fst (quotient_of v)\<close> d_def div_gcd_coprime dvd_0_right
+    by (metis fst_conv snd_conv)
+  ultimately have \<open>u * v = Fract (fst z) (snd z) \<and>
+        (0::int) < snd z \<and> coprime (fst z) (snd z)\<close>
+    by auto
+  hence \<open>quotient_of (u * v) = z\<close>
+    unfolding quotient_of_def
+    using quotient_of_unique by blast
+  hence \<open>fst (quotient_of (u * v)) dvd ((fst (quotient_of u))*(fst (quotient_of v)))\<close>
+    unfolding z_def
+    by (metis d_def dvd_mult_div_cancel dvd_triv_right fst_conv gcd_dvd1)
+  hence \<open>\<not>(p dvd fst (quotient_of (u * v)))\<close>
+    using \<open>\<not> int p dvd fst (quotient_of u) * fst (quotient_of v)\<close> dvd_trans 
+    by blast
+  from \<open>quotient_of (u * v) = z\<close>
+  have \<open>snd (quotient_of (u * v)) dvd ((snd (quotient_of u))*(snd (quotient_of v)))\<close>
+    unfolding z_def
+    by (metis d_def dvd_def dvd_div_mult_self gcd_dvd2 snd_conv)    
+  hence \<open>\<not>(p dvd snd (quotient_of (u * v)))\<close>
+    using \<open>\<not> int p dvd snd (quotient_of u) * snd (quotient_of v)\<close> dvd_trans 
+    by blast    
+  thus ?thesis 
+    using \<open>\<not>(p dvd fst (quotient_of (u * v)))\<close>
+    by (simp add: \<open>prime p\<close> \<open>u \<noteq> 0\<close> \<open>v \<noteq> 0\<close> pval_unit_dvd_D)
+qed
+
+lemma pval_uniq:
+  \<open>prime p \<Longrightarrow> x = (p powr (of_int l)) * y \<Longrightarrow> pval p y = 0 \<Longrightarrow> pval p x = l\<close>
+  sorry
+
+lemma pval_decomposition:
+  \<open>prime p \<Longrightarrow> \<exists> y. x = (p powr (of_int (pval p x))) * y \<and> pval p y = 0\<close>
+  sorry
+
+lemma pval_additivity:
+  \<open>prime p \<Longrightarrow> pval p (u * v) = (pval p u) + (pval p v)\<close>
+proof-
+  assume \<open>prime p\<close>
+  hence \<open>\<exists> y. u = ((of_int p) powr (of_int (pval p u))) * y \<and> pval p y = 0\<close>
+    using pval_decomposition[where p = "p" and x = "u"]
+    by simp
+  then obtain yu where \<open>u = ((of_int p) powr (of_int (pval p u))) * yu\<close> and \<open>pval p yu = 0\<close>
+    by blast
+  have \<open>\<exists> y. v = ((of_int p) powr (of_int (pval p v))) * y \<and> pval p y = 0\<close>
+    using pval_decomposition[where p = "p" and x = "v"] \<open>prime p\<close>
+    by simp
+  then obtain yv where \<open>v = ((of_int p) powr (of_int (pval p v))) * yv\<close> and \<open>pval p yv = 0\<close>
+    by blast
+  have \<open>u * v = ( ((of_int p) powr (of_int (pval p u))) * ((of_int p) powr (of_int (pval p v))) ) 
+                 * (yu * yv)\<close> 
+    using \<open>u = ((of_int p) powr (of_int (pval p u))) * yu\<close>
+      \<open>v = ((of_int p) powr (of_int (pval p v))) * yv\<close>
+    by (simp add: of_rat_mult)
+  also have  \<open>\<dots> = ( ((of_int p) powr (of_int (pval p u + pval p v)) )  ) 
+                 * (yu * yv)\<close> 
+  proof-
+    have \<open>real_of_int (int p) powr real_of_int (pval p u) 
+    * real_of_int (int p) powr real_of_int (pval p v) 
+    = real_of_int (int p) powr (real_of_int (pval p u) + real_of_int (pval p v))\<close>
+      using Transcendental.powr_add[where x = "((of_int p)::real)" 
+          and a = "(of_int (pval p u))::real" 
+          and b = "(of_int (pval p v))::real"]
+      by auto
+    moreover have \<open>real_of_int (pval p u + pval p v) = real_of_int (pval p u) + real_of_int (pval p v)\<close>
+      by auto
+    ultimately have \<open>((of_int p) powr (of_int (pval p u))) * ((of_int p) powr (of_int (pval p v)))
+          = (of_int p) powr (real_of_int (pval p u + pval p v)) \<close>
+      by auto
+    thus ?thesis
+      by (metis (no_types) \<open>of_int (int p) powr of_int (pval p u) * of_int (int p) powr 
+        of_int (pval p v) = of_int (int p) powr of_int (pval p u + pval p v)\<close> of_real_mult)
+  qed
+  finally have \<open>u * v =
+  complex_of_real (real_of_int (int p) powr real_of_int (pval p u + pval p v)) *
+  of_rat (yu * yv)\<close>
+    by blast
+  moreover have \<open>pval p (yu * yv) = 0\<close>
+    using pval_composition_of_units \<open>prime p\<close> \<open>pval p yu = 0\<close> \<open>pval p yv = 0\<close>
+    by (metis mult_eq_0_iff)        
+  ultimately show ?thesis
+    using pval_uniq[where p = "p" and x = "u * v" and l = "pval p u + pval p v" and y = "yu * yv"]
+    by (simp add: \<open>prime p\<close>)    
+qed
+
+lemma pval_primepow:
+  \<open>prime p \<Longrightarrow> pval p ((of_int p)^l) = l\<close>
+proof-
+  assume \<open>prime p\<close>
+  define x where \<open>x = Fract (p^l) 1\<close>
+  have \<open>quotient_of x = (p^l, 1)\<close>
+  proof-
+    have \<open>coprime (p^l) 1\<close>
+      by simp      
+    thus ?thesis 
+      unfolding x_def
+      by (simp add: quotient_of_Fract)      
+  qed
+  have \<open>int (multiplicity p (fst (quotient_of x)) ) = l\<close>
+  proof-
+    have \<open>fst (quotient_of x) = p^l\<close>
+      by (simp add: \<open>quotient_of x = (case (p ^ l, 1) of (x, y) \<Rightarrow> (int x, y))\<close>)
+    thus ?thesis 
+      by (simp add: \<open>prime p\<close>)
+  qed
+  moreover have \<open>int (multiplicity p  (snd (quotient_of x)) ) = 0\<close>
+  proof-
+    have \<open>snd (quotient_of x) = 1\<close>
+      by (simp add: \<open>quotient_of x = (case (p ^ l, 1) of (x, y) \<Rightarrow> (int x, y))\<close>)
+    thus ?thesis 
+      by (simp add: \<open>prime p\<close>)
+  qed
+  moreover have \<open>x = (of_int p)^l\<close>
+    by (metis Fract_of_nat_eq of_int_of_nat_eq of_nat_power x_def)    
+  ultimately show ?thesis 
+    unfolding pval_def
+    by simp
+qed
+
 subsection \<open>p-adic norm\<close>
 
 text\<open>
   We define the p-adic norm.
 \<close>
 definition pnorm :: \<open>nat \<Rightarrow> rat \<Rightarrow> real\<close> where
-\<open>pnorm p x = (if x = 0 
+  \<open>pnorm p x = (if x = 0 
   then 0
   else  p powr  (int (multiplicity p  (snd (quotient_of x)) )
                - int (multiplicity p  (fst (quotient_of x)) )) 
 ) \<close>
 
 lemma pnorm_simplified:
-\<open>x \<noteq> 0 \<Longrightarrow> pnorm p x = p powr  (- (pval p x) )\<close>
+  \<open>x \<noteq> 0 \<Longrightarrow> pnorm p x = p powr  (- (pval p x) )\<close>
   unfolding pval_def pnorm_def
   by auto
 
@@ -140,7 +425,7 @@ next
       by blast      
     ultimately show \<open>pval p x \<ge> 0\<close>
       by (metis add.inverse_inverse neg_0_le_iff_le of_int_0_le_iff of_int_minus of_nat_1 
-            of_nat_less_0_iff of_nat_less_iff powr_le_cancel_iff powr_zero_eq_one)      
+          of_nat_less_0_iff of_nat_less_iff powr_le_cancel_iff powr_zero_eq_one)      
   qed
   thus ?thesis
     using integers_pval_I by blast 
@@ -186,20 +471,127 @@ lemma integers_pnorm:
   using integers_pnorm_D integers_pnorm_I 
   by blast
 
-subsection \<open>Auxiliary results\<close>
+lemma pnorm_multiplicativity:
+  \<open>prime p \<Longrightarrow> pnorm p (u * v) = (pnorm p u) * (pnorm p v)\<close>
+proof(cases \<open>u * v = 0\<close>)
+  case True
+  hence \<open>u = 0 \<or> v = 0\<close>
+    by (simp add: True divisors_zero)
+  have \<open>pnorm p (u * v) = 0\<close>
+    unfolding pnorm_def
+    by (simp add: True)
+  show ?thesis
+  proof(cases \<open>u = 0\<close>)
+    case True
+    hence \<open>pnorm p u = 0\<close>
+      unfolding pnorm_def
+      by auto
+    thus ?thesis
+      by (simp add: \<open>pnorm p (u * v) = 0\<close>)
+  next
+    case False
+    hence \<open>v = 0\<close>
+      using \<open>u = 0 \<or> v = 0\<close> 
+      by blast
+    hence \<open>pnorm p v = 0\<close>
+      unfolding pnorm_def
+      by auto
+    thus ?thesis
+      by (simp add: \<open>pnorm p (u * v) = 0\<close>)
+  qed
+next
+  case False
+  hence \<open>u \<noteq> 0\<close>
+    by simp
+  hence \<open>v \<noteq> 0\<close>
+    using False
+    by simp
+  assume \<open>prime p\<close>
+  have \<open>pnorm p (u * v) = p powr (-(pval p (u * v)))\<close>
+    using pnorm_simplified[where p = "p" and x = "u * v"]
+      False by blast    
+  also have \<open>\<dots> = p powr (-(pval p u) - (pval p v))\<close>
+  proof-
+    have \<open>pval p (u * v) = (pval p u) + (pval p v)\<close>
+      using \<open>prime p\<close> pval_additivity[where p = "p" and u = "u" and v = "v"]
+      by blast
+    hence \<open>-(pval p (u * v)) = -(pval p u) - (pval p v)\<close>
+      by simp
+    thus ?thesis
+      by simp 
+  qed
+  also have \<open>\<dots> = (p powr (-(pval p u)))*(p powr (- (pval p v)))\<close>
+    by (metis linordered_field_class.sign_simps(2) of_int_add powr_add uminus_add_conv_diff)    
+  also have \<open>\<dots> = (pnorm p u)*(pnorm p v)\<close>
+    using \<open>u \<noteq> 0\<close> \<open>v \<noteq> 0\<close> pnorm_simplified 
+    by auto
+  finally show ?thesis by blast
+qed
 
+lemma pnorm_primepow:
+  \<open>prime p \<Longrightarrow> pnorm p ((of_int p)^l) = 1/p^l\<close>
+proof-
+  assume \<open>prime p\<close>
+  moreover have \<open>(of_int p)^l \<noteq> (0::rat)\<close>
+    using calculation by auto
+  ultimately have \<open>pnorm p ((of_int p)^l) = p powr  (- (pval p ((of_int p)^l)) )\<close>
+    using pnorm_simplified 
+    by auto
+  moreover have \<open>pval p ((of_int p)^l) = l\<close>
+    using pval_primepow \<open>prime p\<close>
+    by auto
+  ultimately have \<open>pnorm p ((of_int p)^l) = p powr (-l)\<close>
+    by simp
+  also have \<open>p powr (-l) = 1/p^l\<close>
+    using Transcendental.powr_minus_divide[where x = "p" and a = "l"]
+    by (simp add: \<open>prime p\<close> powr_realpow prime_gt_0_nat)
+  finally show ?thesis 
+    by simp
+qed
+
+subsection \<open>Auxiliary results\<close>
+lemma harmonic_numbers_2norm:
+  fixes n :: nat
+  assumes \<open>n \<ge> 2\<close>
+  shows \<open>pnorm 2 (\<Sum>k = 1..n. (Fract 1 (of_nat k))) = 2^(nat(\<lfloor>log 2 n\<rfloor>))\<close>
+proof-
+  define l where \<open>l = nat(\<lfloor>log 2 n\<rfloor>)\<close>
+  define H where \<open>H = (\<Sum>k = 1..n. (Fract 1 (of_nat k)))\<close>
+  have \<open>pnorm 2 ((2^l) * H) = 1\<close>
+    sorry
+  hence \<open>(pnorm 2 (2^l)) * (pnorm 2 H) = 1\<close>
+    using pnorm_multiplicativity
+    by auto
+  hence \<open>(1/2^l) * (pnorm 2 H) = 1\<close>
+  proof-
+    have \<open>prime (2::nat)\<close>
+      by simp
+    hence \<open>pnorm 2 (2^l) = 1/2^l\<close>
+      using pnorm_primepow[where p = 2 and l = "l"] 
+      by simp
+    thus ?thesis
+      using \<open>pnorm 2 (2 ^ l) * pnorm 2 H = 1\<close> 
+      by auto
+  qed
+  hence \<open>pnorm 2 H = 2^l\<close>
+    by simp    
+  thus ?thesis
+    using H_def l_def
+    by blast
+qed
 
 subsection \<open>Main result\<close>
 
 theorem harmonic_numbers_are_not_integers:
   fixes n :: nat
   assumes \<open>n \<ge> 2\<close>
-  shows \<open>(\<Sum> k = 1..n. (Fract 1 (of_nat k)) ) \<notin> \<int>\<close>
+  shows \<open>(\<Sum>k = 1..n. (Fract 1 (of_nat k)) ) \<notin> \<int>\<close>
 proof-
-  have \<open>pnorm 2 (\<Sum> k = 1..n. (Fract 1 (of_nat k)) ) > 1\<close>
-    sorry
+  have \<open>pnorm 2 (\<Sum>k = 1..n. (Fract 1 (of_nat k)) ) > 1\<close>
+    using harmonic_numbers_2norm[where n = "n"]  \<open>n \<ge> 2\<close>
+    by simp
   thus ?thesis
-    by (smt integers_pnorm_D two_is_prime_nat)     
+    by (smt integers_pnorm_D two_is_prime_nat)
 qed
 
 end
