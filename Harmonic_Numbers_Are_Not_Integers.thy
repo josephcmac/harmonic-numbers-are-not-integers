@@ -294,7 +294,73 @@ qed
 
 lemma pval_uniq:
   \<open>prime p \<Longrightarrow> x = (p powr (of_int l)) * y \<Longrightarrow> pval p y = 0 \<Longrightarrow> pval p x = l\<close>
-  sorry
+proof-
+  assume \<open>prime p\<close> and \<open>x = (p powr (of_int l)) * y\<close> and \<open>pval p y = 0\<close>
+  have \<open>y = Fract (fst (quotient_of y)) (snd (quotient_of y))\<close>
+    by (simp add: Fract_of_int_quotient quotient_of_div)
+  have \<open>p > 0\<close>
+    using \<open>prime p\<close>
+    by (simp add: prime_gt_0_nat)
+  show \<open>pval p x = l\<close>
+  proof(cases \<open>l \<ge> 0\<close>)
+    case True
+    have \<open>x = p^(nat l) * y\<close>
+    proof-
+      have \<open>p powr (of_int l) =  p^(nat l)\<close>
+        using True Transcendental.powr_realpow[where x = p and n = "nat l"]  \<open>p > 0\<close>
+        by simp
+      thus ?thesis
+        by (simp add: \<open>of_rat x = complex_of_real (real p powr real_of_int l) * of_rat y\<close>)
+    qed
+    also have \<open>\<dots> = p^(nat l) * Fract (fst (quotient_of y)) (snd (quotient_of y))\<close>
+      using \<open>y = Fract (fst (quotient_of y)) (snd (quotient_of y))\<close>
+      by simp      
+    also have \<open>\<dots> = (Fract (p^(nat l)) 1) * (Fract ((fst (quotient_of y))) (snd (quotient_of y)))\<close>
+    proof-
+      have \<open>p^(nat l) = Fract (p^(nat l)) 1\<close>
+        by (metis Fract_of_nat_eq of_rat_of_nat_eq)        
+      thus ?thesis
+        by (metis of_rat_mult)        
+    qed
+    also have \<open>\<dots> = Fract (p^(nat l) * (fst (quotient_of y))) (snd (quotient_of y))\<close>
+      by simp
+    finally have \<open>x = (Fract ((p ^ nat l) * fst (quotient_of y)) (snd (quotient_of y)))\<close>
+      by simp
+    moreover have \<open>coprime ((p ^ nat l) * fst (quotient_of y)) (snd (quotient_of y))\<close>
+    proof-
+      have \<open>coprime (fst (quotient_of y)) (snd (quotient_of y))\<close>
+        by (simp add: quotient_of_coprime)
+
+      show ?thesis sorry
+    qed
+    moreover have \<open>snd (quotient_of y) > 0\<close>
+      by (simp add: quotient_of_denom_pos')
+    ultimately have \<open>quotient_of x = ((p^(nat l)) * fst (quotient_of y), snd (quotient_of y))\<close>
+      by (simp add: quotient_of_Fract)
+    have \<open>pval p x = int (multiplicity p (fst (quotient_of x)) )
+                   - int (multiplicity p (snd (quotient_of x)) )\<close>
+      unfolding pval_def 
+      by blast
+    also have \<open>\<dots> = int (multiplicity p ((p^(nat l)) * fst (quotient_of y)) )
+                  - int (multiplicity p (snd (quotient_of y)) )\<close>
+      using \<open>quotient_of x = ((p^(nat l)) * fst (quotient_of y), snd (quotient_of y))\<close>
+      by simp
+    also have \<open>\<dots> = int (multiplicity p ((p^(nat l)) * fst (quotient_of y)) )\<close>
+    proof-
+      have \<open>int (multiplicity p (snd (quotient_of y))) = 0\<close>
+        sorry
+      thus ?thesis 
+        by simp
+    qed
+    also have \<open>\<dots> = l\<close>
+      sorry
+    finally show ?thesis
+      by simp 
+  next
+    case False
+    thus ?thesis sorry
+  qed
+qed
 
 lemma pval_decomposition:
   \<open>prime p \<Longrightarrow> \<exists> y. x = (p powr (of_int (pval p x))) * y \<and> pval p y = 0\<close>
