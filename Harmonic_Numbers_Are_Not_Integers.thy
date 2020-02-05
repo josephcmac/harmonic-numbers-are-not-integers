@@ -292,73 +292,351 @@ proof-
     by (simp add: \<open>prime p\<close> \<open>u \<noteq> 0\<close> \<open>v \<noteq> 0\<close> pval_unit_dvd_D)
 qed
 
-lemma pval_uniq:
-  \<open>prime p \<Longrightarrow> x = (p powr (of_int l)) * y \<Longrightarrow> pval p y = 0 \<Longrightarrow> pval p x = l\<close>
+lemma multiplicity_quotient_fst: 
+  \<open>(multiplicity (int p) (fst (quotient_of (1 / x)))) 
+        = (multiplicity (int p) (snd (quotient_of x)))\<close>
+proof(cases \<open>x = 0\<close>)
+  case True
+  thus ?thesis
+    by (simp add: True) 
+next
+  case False
+  hence \<open>x \<noteq> 0\<close>
+    by blast
+  show ?thesis 
+  proof(cases \<open>x > 0\<close>)
+    case True
+    hence \<open>\<exists> u v. x = Fract u v \<and> gcd u v = 1 \<and> u > 0 \<and> v > 0\<close>
+      by (metis \<open>x \<noteq> 0\<close> Rat_cases_nonzero coprime_imp_gcd_eq_1 zero_less_Fract_iff)
+    then obtain u v where \<open>x = Fract u v\<close> and \<open>gcd u v = 1\<close> and \<open>u > 0\<close> and \<open>v > 0\<close>
+      by auto
+    have \<open>quotient_of x = (u, v)\<close>
+      using \<open>0 < v\<close> \<open>gcd u v = 1\<close> \<open>x = Fract u v\<close> int.zero_not_one quotient_of_Fract 
+      by auto
+    moreover have \<open>quotient_of (1/x) = (v, u)\<close>
+    proof-
+      have \<open>1/x = Fract v u\<close>
+        using \<open>x = Fract u v\<close>
+        by (simp add: One_rat_def)
+      moreover have \<open>gcd v u = 1\<close>
+        using  \<open>gcd u v = 1\<close>
+        by (simp add: gcd.commute)
+      ultimately show ?thesis
+        unfolding quotient_of_def
+        using \<open>u > 0\<close> quotient_of_Fract quotient_of_def 
+        by auto
+    qed
+    ultimately show ?thesis
+      by auto
+  next
+    case False
+    hence \<open>x < 0\<close>
+      using \<open>x \<noteq> 0\<close> 
+      by simp
+    hence \<open>\<exists> u v. x = Fract u v \<and> gcd u v = 1 \<and> u < 0 \<and> v > 0\<close>
+      using \<open>x \<noteq> 0\<close> Rat_cases_nonzero coprime_imp_gcd_eq_1 zero_less_Fract_iff
+    proof -
+      have "\<forall>r. \<exists>i ia. x \<noteq> 0 \<and> 0 < i \<and> (r = 0 \<or> coprime ia i) \<and> (r = 0 \<or> Fract ia i = r)"
+        by (metis (full_types) Rat_cases_nonzero \<open>x \<noteq> 0\<close>)
+      then show ?thesis
+        by (metis (no_types) Fract_less_zero_iff \<open>x < 0\<close> coprime_imp_gcd_eq_1)
+    qed
+    then obtain u v where \<open>x = Fract u v\<close> and \<open>gcd u v = 1\<close> and \<open>u < 0\<close> and \<open>v > 0\<close>
+      by auto
+    have \<open>quotient_of x = (u, v)\<close>
+      using \<open>0 < v\<close> \<open>gcd u v = 1\<close> \<open>x = Fract u v\<close> int.zero_not_one quotient_of_Fract 
+      by auto
+    moreover have \<open>quotient_of (1/x) = (-v, -u)\<close>
+    proof-
+      have \<open>1/x = Fract (-v) (-u)\<close>
+        using \<open>x = Fract u v\<close>
+        by (simp add: One_rat_def)
+      moreover have \<open>gcd (-v) (-u) = 1\<close>
+        using  \<open>gcd u v = 1\<close>
+        by (simp add: gcd.commute)
+      moreover have \<open>-u > 0\<close>
+        using \<open>u < 0\<close>
+        by simp
+      ultimately show ?thesis
+        unfolding quotient_of_def
+        using quotient_of_Fract quotient_of_def 
+        by auto
+    qed
+    ultimately show ?thesis
+      by auto
+  qed
+qed
+
+
+lemma multiplicity_quotient_snd: 
+  \<open>multiplicity (int p) (snd (quotient_of (1 / x)))
+                = multiplicity (int p) (fst (quotient_of x))\<close>
+proof(cases \<open>x = 0\<close>)
+  case True
+  thus ?thesis
+    by (simp add: True) 
+next
+  case False
+  hence \<open>x \<noteq> 0\<close>
+    by blast
+  show ?thesis 
+  proof(cases \<open>x > 0\<close>)
+    case True
+    hence \<open>\<exists> u v. x = Fract u v \<and> gcd u v = 1 \<and> u > 0 \<and> v > 0\<close>
+      by (metis \<open>x \<noteq> 0\<close> Rat_cases_nonzero coprime_imp_gcd_eq_1 zero_less_Fract_iff)
+    then obtain u v where \<open>x = Fract u v\<close> and \<open>gcd u v = 1\<close> and \<open>u > 0\<close> and \<open>v > 0\<close>
+      by auto
+    have \<open>quotient_of x = (u, v)\<close>
+      using \<open>0 < v\<close> \<open>gcd u v = 1\<close> \<open>x = Fract u v\<close> int.zero_not_one quotient_of_Fract 
+      by auto
+    moreover have \<open>quotient_of (1/x) = (v, u)\<close>
+    proof-
+      have \<open>1/x = Fract v u\<close>
+        using \<open>x = Fract u v\<close>
+        by (simp add: One_rat_def)
+      moreover have \<open>gcd v u = 1\<close>
+        using  \<open>gcd u v = 1\<close>
+        by (simp add: gcd.commute)
+      ultimately show ?thesis
+        unfolding quotient_of_def
+        using \<open>u > 0\<close> quotient_of_Fract quotient_of_def 
+        by auto
+    qed
+    ultimately show ?thesis
+      by auto
+  next
+    case False
+    hence \<open>x < 0\<close>
+      using \<open>x \<noteq> 0\<close> 
+      by simp
+    hence \<open>\<exists> u v. x = Fract u v \<and> gcd u v = 1 \<and> u < 0 \<and> v > 0\<close>
+      using \<open>x \<noteq> 0\<close> Rat_cases_nonzero coprime_imp_gcd_eq_1 zero_less_Fract_iff
+    proof -
+      have "\<forall>r. \<exists>i ia. x \<noteq> 0 \<and> 0 < i \<and> (r = 0 \<or> coprime ia i) \<and> (r = 0 \<or> Fract ia i = r)"
+        by (metis (full_types) Rat_cases_nonzero \<open>x \<noteq> 0\<close>)
+      then show ?thesis
+        by (metis (no_types) Fract_less_zero_iff \<open>x < 0\<close> coprime_imp_gcd_eq_1)
+    qed
+    then obtain u v where \<open>x = Fract u v\<close> and \<open>gcd u v = 1\<close> and \<open>u < 0\<close> and \<open>v > 0\<close>
+      by auto
+    have \<open>quotient_of x = (u, v)\<close>
+      using \<open>0 < v\<close> \<open>gcd u v = 1\<close> \<open>x = Fract u v\<close> int.zero_not_one quotient_of_Fract 
+      by auto
+    moreover have \<open>quotient_of (1/x) = (-v, -u)\<close>
+    proof-
+      have \<open>1/x = Fract (-v) (-u)\<close>
+        using \<open>x = Fract u v\<close>
+        by (simp add: One_rat_def)
+      moreover have \<open>gcd (-v) (-u) = 1\<close>
+        using  \<open>gcd u v = 1\<close>
+        by (simp add: gcd.commute)
+      moreover have \<open>-u > 0\<close>
+        using \<open>u < 0\<close>
+        by simp
+      ultimately show ?thesis
+        unfolding quotient_of_def
+        using quotient_of_Fract quotient_of_def 
+        by auto
+    qed
+    ultimately show ?thesis
+      by auto
+  qed
+qed
+
+lemma pval_inverse:
+  \<open>prime p \<Longrightarrow> pval p (1/x) = - pval p x\<close>
 proof-
-  assume \<open>prime p\<close> and \<open>x = (p powr (of_int l)) * y\<close> and \<open>pval p y = 0\<close>
+  assume \<open>prime p\<close>
+  have \<open>pval p (1/x) = int (multiplicity (int p) (fst (quotient_of (1 / x)))) -
+    int (multiplicity (int p) (snd (quotient_of (1 / x))))\<close>
+    unfolding pval_def
+    by blast
+  also have \<open>\<dots> = int (multiplicity (int p) (snd (quotient_of x))) -
+    int (multiplicity (int p) (fst (quotient_of x)))\<close>
+  proof-
+    have \<open>(multiplicity (int p) (fst (quotient_of (1 / x)))) 
+        = (multiplicity (int p) (snd (quotient_of x)))\<close>
+      by (simp add: multiplicity_quotient_fst)      
+    moreover have \<open>multiplicity (int p) (snd (quotient_of (1 / x)))
+                = multiplicity (int p) (fst (quotient_of x))\<close>
+      by (simp add: multiplicity_quotient_snd)      
+    ultimately show ?thesis 
+      by simp
+  qed
+  also have \<open>\<dots> = - (pval p x)\<close>
+    unfolding pval_def 
+    by simp
+  finally show ?thesis
+    by blast
+qed
+
+lemma pval_uniq':
+  \<open>prime p \<Longrightarrow> y \<noteq> 0 \<Longrightarrow> x = (p powr (of_int l)) * y \<Longrightarrow> pval p y = 0 \<Longrightarrow> l \<ge> 0 \<Longrightarrow> pval p x = l\<close>
+proof-
+  assume \<open>prime p\<close> and \<open>y \<noteq> 0\<close> and \<open>x = (p powr (of_int l)) * y\<close> and \<open>pval p y = 0\<close> and  \<open>l \<ge> 0\<close>
   have \<open>y = Fract (fst (quotient_of y)) (snd (quotient_of y))\<close>
     by (simp add: Fract_of_int_quotient quotient_of_div)
   have \<open>p > 0\<close>
     using \<open>prime p\<close>
     by (simp add: prime_gt_0_nat)
-  show \<open>pval p x = l\<close>
+  have \<open>x = p^(nat l) * y\<close>
+  proof-
+    have \<open>p powr (of_int l) =  p^(nat l)\<close>
+      using \<open>l \<ge> 0\<close> Transcendental.powr_realpow[where x = p and n = "nat l"]  \<open>p > 0\<close>
+      by simp
+    thus ?thesis
+      by (simp add: \<open>of_rat x = complex_of_real (real p powr real_of_int l) * of_rat y\<close>)
+  qed
+  also have \<open>\<dots> = p^(nat l) * Fract (fst (quotient_of y)) (snd (quotient_of y))\<close>
+    using \<open>y = Fract (fst (quotient_of y)) (snd (quotient_of y))\<close>
+    by simp      
+  also have \<open>\<dots> = (Fract (p^(nat l)) 1) * (Fract ((fst (quotient_of y))) (snd (quotient_of y)))\<close>
+  proof-
+    have \<open>p^(nat l) = Fract (p^(nat l)) 1\<close>
+      by (metis Fract_of_nat_eq of_rat_of_nat_eq)        
+    thus ?thesis
+      by (metis of_rat_mult)        
+  qed
+  also have \<open>\<dots> = Fract (p^(nat l) * (fst (quotient_of y))) (snd (quotient_of y))\<close>
+    by simp
+  finally have \<open>x = (Fract ((p ^ nat l) * fst (quotient_of y)) (snd (quotient_of y)))\<close>
+    by simp
+  moreover have \<open>coprime ((p ^ nat l) * fst (quotient_of y)) (snd (quotient_of y))\<close>
+  proof-
+    have \<open>coprime (fst (quotient_of y)) (snd (quotient_of y))\<close>
+      by (simp add: quotient_of_coprime)
+    moreover have \<open>coprime (p ^ nat l) (snd (quotient_of y))\<close>
+      by (metis Fract_less_zero_iff \<open>prime p\<close> \<open>pval p y = 0\<close> \<open>y = Fract (fst (quotient_of y)) 
+          (snd (quotient_of y))\<close> calculation coprime_absorb_left coprime_commute
+          coprime_power_left_iff dvd_0_right int.lless_eq is_unit_right_imp_coprime nat_0_iff 
+          neq0_conv of_nat_power prime_imp_coprime_int prime_nat_int_transfer pval_unit_dvd 
+          quotient_of_denom_pos' zero_less_Fract_iff zero_less_nat_eq)
+    ultimately show ?thesis
+      using coprime_mult_left_iff 
+      by blast 
+  qed
+  moreover have \<open>snd (quotient_of y) > 0\<close>
+    by (simp add: quotient_of_denom_pos')
+  ultimately have \<open>quotient_of x = ((p^(nat l)) * fst (quotient_of y), snd (quotient_of y))\<close>
+    by (simp add: quotient_of_Fract)
+  have \<open>pval p x = int (multiplicity p (fst (quotient_of x)) )
+                   - int (multiplicity p (snd (quotient_of x)) )\<close>
+    unfolding pval_def 
+    by blast
+  also have \<open>\<dots> = int (multiplicity p ((p^(nat l)) * fst (quotient_of y)) )
+                  - int (multiplicity p (snd (quotient_of y)) )\<close>
+    using \<open>quotient_of x = ((p^(nat l)) * fst (quotient_of y), snd (quotient_of y))\<close>
+    by simp
+  also have \<open>\<dots> = int (multiplicity p ((p^(nat l)) * fst (quotient_of y)) )\<close>
+  proof-
+    have \<open>multiplicity p (snd (quotient_of y)) = 0\<close>
+      by (metis \<open>prime p\<close> \<open>pval p y = 0\<close> dvd_refl multiplicity_unit_right 
+          not_dvd_imp_multiplicity_0 pval_unit_dvd rat_zero_code snd_conv)        
+    thus ?thesis 
+      by simp
+  qed
+  also have \<open>\<dots> = l\<close>
+  proof-
+    have \<open>l \<le> multiplicity  p ((p ^ nat l) * fst (quotient_of y))\<close>
+    proof-
+      have \<open>(p ^ nat l) * fst (quotient_of y) \<noteq> 0\<close>
+      proof-
+        have \<open>p ^ nat l \<noteq> 0\<close>
+          using \<open>prime p\<close>
+          by auto
+        moreover have \<open>fst (quotient_of y) \<noteq> 0\<close>
+          using \<open>y \<noteq> 0\<close>
+          by (metis Zero_rat_def \<open>y = Fract (fst (quotient_of y)) (snd (quotient_of y))\<close> eq_rat(3))
+        ultimately show ?thesis 
+          by simp
+      qed
+      moreover have \<open>(p ^ nat l) dvd ((p ^ nat l) * fst (quotient_of y))\<close>
+        by simp          
+      moreover have \<open>\<not> is_unit (int p)\<close>
+        using \<open>prime p\<close>
+        by auto
+      ultimately show ?thesis 
+        using multiplicity_geI[where x = "(p ^ nat l) * fst (quotient_of y)" 
+            and p = p and n = "nat l"]
+        by simp
+    qed
+    moreover have \<open>multiplicity p ((p ^ nat l) * fst (quotient_of y)) < l + 1\<close>
+    proof(rule classical)
+      assume \<open>\<not> (multiplicity p ((p ^ nat l) * fst (quotient_of y)) < l + 1)\<close>
+      hence \<open>multiplicity p ((p ^ nat l) * fst (quotient_of y)) \<ge> l + 1\<close>
+        by simp
+      hence \<open>(p ^ (nat l+1)) dvd ((p ^ nat l) * fst (quotient_of y))\<close>
+        using multiplicity_dvd'[where n = "nat l + 1" and p = p 
+            and x = "(p ^ nat l) * fst (quotient_of y)"] \<open>l \<ge> 0\<close> 
+        by auto
+      hence \<open>((p ^ nat l)*p) dvd ((p ^ nat l) * fst (quotient_of y))\<close>
+        by simp
+      hence \<open>p dvd (fst (quotient_of y))\<close>
+        using \<open>prime p\<close> 
+        by auto
+      thus ?thesis
+        using \<open>prime p\<close> \<open>pval p y = 0\<close> \<open>y \<noteq> 0\<close> pval_unit_dvd 
+        by blast 
+    qed
+    ultimately show ?thesis 
+      by simp
+  qed
+  finally show ?thesis
+    by simp 
+qed
+
+
+lemma pval_uniq:
+  \<open>prime p \<Longrightarrow> y \<noteq> 0 \<Longrightarrow> x = (p powr (of_int l)) * y \<Longrightarrow> pval p y = 0 \<Longrightarrow> pval p x = l\<close>
+proof-
+  assume \<open>prime p\<close> and \<open>y \<noteq> 0\<close> and \<open>x = (p powr (of_int l)) * y\<close> and \<open>pval p y = 0\<close>
+  show ?thesis
   proof(cases \<open>l \<ge> 0\<close>)
     case True
-    have \<open>x = p^(nat l) * y\<close>
-    proof-
-      have \<open>p powr (of_int l) =  p^(nat l)\<close>
-        using True Transcendental.powr_realpow[where x = p and n = "nat l"]  \<open>p > 0\<close>
-        by simp
-      thus ?thesis
-        by (simp add: \<open>of_rat x = complex_of_real (real p powr real_of_int l) * of_rat y\<close>)
-    qed
-    also have \<open>\<dots> = p^(nat l) * Fract (fst (quotient_of y)) (snd (quotient_of y))\<close>
-      using \<open>y = Fract (fst (quotient_of y)) (snd (quotient_of y))\<close>
-      by simp      
-    also have \<open>\<dots> = (Fract (p^(nat l)) 1) * (Fract ((fst (quotient_of y))) (snd (quotient_of y)))\<close>
-    proof-
-      have \<open>p^(nat l) = Fract (p^(nat l)) 1\<close>
-        by (metis Fract_of_nat_eq of_rat_of_nat_eq)        
-      thus ?thesis
-        by (metis of_rat_mult)        
-    qed
-    also have \<open>\<dots> = Fract (p^(nat l) * (fst (quotient_of y))) (snd (quotient_of y))\<close>
-      by simp
-    finally have \<open>x = (Fract ((p ^ nat l) * fst (quotient_of y)) (snd (quotient_of y)))\<close>
-      by simp
-    moreover have \<open>coprime ((p ^ nat l) * fst (quotient_of y)) (snd (quotient_of y))\<close>
-    proof-
-      have \<open>coprime (fst (quotient_of y)) (snd (quotient_of y))\<close>
-        by (simp add: quotient_of_coprime)
-
-      show ?thesis sorry
-    qed
-    moreover have \<open>snd (quotient_of y) > 0\<close>
-      by (simp add: quotient_of_denom_pos')
-    ultimately have \<open>quotient_of x = ((p^(nat l)) * fst (quotient_of y), snd (quotient_of y))\<close>
-      by (simp add: quotient_of_Fract)
-    have \<open>pval p x = int (multiplicity p (fst (quotient_of x)) )
-                   - int (multiplicity p (snd (quotient_of x)) )\<close>
-      unfolding pval_def 
-      by blast
-    also have \<open>\<dots> = int (multiplicity p ((p^(nat l)) * fst (quotient_of y)) )
-                  - int (multiplicity p (snd (quotient_of y)) )\<close>
-      using \<open>quotient_of x = ((p^(nat l)) * fst (quotient_of y), snd (quotient_of y))\<close>
-      by simp
-    also have \<open>\<dots> = int (multiplicity p ((p^(nat l)) * fst (quotient_of y)) )\<close>
-    proof-
-      have \<open>int (multiplicity p (snd (quotient_of y))) = 0\<close>
-        sorry
-      thus ?thesis 
-        by simp
-    qed
-    also have \<open>\<dots> = l\<close>
-      sorry
-    finally show ?thesis
-      by simp 
+    thus ?thesis
+      using \<open>of_rat x = complex_of_real (real p powr real_of_int l) * of_rat y\<close> \<open>prime p\<close> 
+        \<open>pval p y = 0\<close> \<open>y \<noteq> 0\<close> pval_uniq' 
+      by blast 
   next
     case False
-    thus ?thesis sorry
+    define l' where \<open>l' = -l\<close>
+    have \<open>l' \<ge> 0\<close>
+      using False l'_def 
+      by linarith
+    define x' where \<open>x' = 1/x\<close>
+    define y' where \<open>y' = 1/y\<close>
+    have \<open>y' \<noteq> 0\<close>
+      unfolding y'_def
+      by (simp add: \<open>y \<noteq> 0\<close>)
+    moreover have \<open>x' = (p powr (of_int l')) * y'\<close>
+    proof-
+      have \<open>x' = 1/((p powr (of_int l)) * y)\<close>
+        unfolding  x'_def
+        using \<open>x = (p powr (of_int l)) * y\<close>
+        by (simp add: of_rat_divide)
+      also have \<open>\<dots> = (1/(p powr (of_int l)))*(1/y)\<close>
+        by (simp add: \<open>y \<noteq> 0\<close> nonzero_of_rat_divide)
+      also have \<open>\<dots> = (1/(p powr (of_int l)))*y'\<close>
+        unfolding y'_def
+        by simp
+      also have \<open>\<dots> = (p powr (- of_int l))*y'\<close>
+        by (simp add: divide_powr_uminus)
+      also have \<open>\<dots> = (p powr (of_int l'))*y'\<close>
+        unfolding l'_def
+        by simp
+      finally show ?thesis
+        by blast
+    qed
+    moreover have  \<open>pval p y' = 0\<close>
+      unfolding y'_def
+      by (simp add: \<open>prime p\<close> \<open>pval p y = 0\<close> pval_inverse)
+    ultimately have \<open>pval p x' = l'\<close>
+      using \<open>0 \<le> l'\<close> \<open>prime p\<close> pval_uniq' 
+      by blast
+    thus \<open>pval p x = l\<close>
+      unfolding x'_def l'_def
+      using \<open>prime p\<close> pval_inverse 
+      by simp
   qed
 qed
 
@@ -413,7 +691,7 @@ proof-
     by (metis mult_eq_0_iff)        
   ultimately show ?thesis
     using pval_uniq[where p = "p" and x = "u * v" and l = "pval p u + pval p v" and y = "yu * yv"]
-    by (simp add: \<open>prime p\<close>)    
+      \<open>prime p\<close> sorry
 qed
 
 lemma pval_primepow:
