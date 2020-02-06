@@ -640,14 +640,261 @@ proof-
   qed
 qed
 
-lemma pval_decomposition:
-  \<open>prime p \<Longrightarrow> \<exists> y. x = (p powr (of_int (pval p x))) * y \<and> pval p y = 0\<close>
-  sorry
-
-lemma pval_additivity:
-  \<open>prime p \<Longrightarrow> pval p (u * v) = (pval p u) + (pval p v)\<close>
+lemma pval_zero: \<open>prime p \<Longrightarrow> pval p 0 = 0\<close>
 proof-
   assume \<open>prime p\<close>
+  have \<open>quotient_of 0 = (0, 1)\<close>
+    by simp
+  thus ?thesis
+    unfolding pval_def
+    by auto
+qed
+
+lemma pval_comprime:
+  \<open>prime p \<Longrightarrow> \<not> ( p dvd (fst (quotient_of x)) ) \<or>  \<not> ( p dvd (snd (quotient_of x)) )\<close>
+proof-
+  assume \<open>prime p\<close>
+  show ?thesis
+  proof(rule classical)
+    assume \<open>\<not>(\<not> ( p dvd (fst (quotient_of x)) ) \<or>  \<not> ( p dvd (snd (quotient_of x)) ))\<close>
+    hence \<open>p dvd (fst (quotient_of x)) \<and> p dvd (snd (quotient_of x))\<close>
+      by blast
+    hence \<open>\<not> coprime (fst (quotient_of x)) (snd (quotient_of x))\<close>
+      using \<open>prime p\<close> coprime_common_divisor not_prime_unit 
+      by blast
+    thus ?thesis
+      using quotient_of_coprime 
+      by auto 
+  qed
+qed
+
+lemma pval_decomposition:
+  \<open>prime p \<Longrightarrow> \<exists> y. (x::rat) = (p powr (of_int (pval p x))) * y \<and> pval p y = 0\<close>
+proof(cases \<open>x = 0\<close>)
+  case True
+  assume \<open>prime p\<close>
+  define y::rat where \<open>y = 0\<close>
+  have \<open>x = (p powr (of_int (pval p x))) * y\<close> 
+    unfolding y_def
+    by (simp add: True)    
+  moreover  have \<open>pval p y = 0\<close>
+    unfolding y_def
+    using pval_zero \<open>prime p\<close>
+    by simp
+  ultimately show ?thesis 
+    by blast
+next
+  case False
+  assume \<open>prime p\<close>
+  hence \<open>\<not> ( p dvd (fst (quotient_of x)) ) \<or>  \<not> ( p dvd (snd (quotient_of x)) )\<close>
+    using prime_nat_int_transfer pval_comprime 
+    by blast    
+  show ?thesis
+  proof(cases \<open>\<not> ( p dvd (snd (quotient_of x)) )\<close>)
+    case True
+    hence \<open>multiplicity p (snd (quotient_of x)) = 0\<close>
+      using not_dvd_imp_multiplicity_0 
+      by auto
+    hence \<open>pval p x = int (multiplicity (int p) (fst (quotient_of x))) -
+    int (multiplicity (int p) (snd (quotient_of x)))\<close>
+      unfolding pval_def
+      by blast
+    also have \<open>\<dots> = (multiplicity (int p) (fst (quotient_of x)))\<close>
+      by (simp add: \<open>multiplicity (int p) (snd (quotient_of x)) = 0\<close>)
+    finally have \<open>pval p x = multiplicity (int p) (fst (quotient_of x))\<close>
+      by blast
+    hence \<open>pval p x \<ge> 0\<close>
+      by simp      
+    have \<open>(p ^ (nat (pval p x))) dvd fst (quotient_of x)\<close>
+      using multiplicity_dvd \<open>pval p x = multiplicity (int p) (fst (quotient_of x))\<close>
+      by simp
+    hence \<open>\<exists> k::int. fst (quotient_of x) = p ^ (nat (pval p x)) * k\<close>
+      by auto
+    then obtain k::int where \<open>fst (quotient_of x) = p ^ (nat (pval p x)) * k\<close>
+      by blast
+    have \<open>multiplicity p k = 0\<close>
+    proof(rule classical)
+      assume \<open>\<not> (multiplicity p k = 0)\<close>
+      hence \<open>multiplicity p k \<ge> 1\<close>
+        by auto
+      hence \<open>p dvd k\<close>
+        by (meson \<open>multiplicity (int p) k \<noteq> 0\<close> not_dvd_imp_multiplicity_0)
+      hence \<open>(p ^ (nat (pval p x)+1)) dvd (p ^ (nat (pval p x))*k)\<close>
+        by simp
+      hence \<open>(p ^ (nat (pval p x)+1)) dvd (fst (quotient_of x))\<close>
+        by (simp add: \<open>fst (quotient_of x) = int (p ^ nat (pval p x)) * k\<close>)
+      hence \<open>multiplicity p (fst (quotient_of x)) \<ge> nat (pval p x)+1\<close>
+        using multiplicity_geI
+        by (metis \<open>fst (quotient_of x) = int (p ^ nat (pval p x)) * k\<close> \<open>multiplicity (int p) k \<noteq> 0\<close> \<open>prime p\<close> multiplicity_unit_left multiplicity_zero no_zero_divisors not_prime_0 of_nat_eq_0_iff of_nat_power power_not_zero)
+      thus ?thesis
+        by (simp add: \<open>pval p x = int (multiplicity (int p) (fst (quotient_of x)))\<close>)
+    qed
+    define y where \<open>y = Fract k (snd (quotient_of x))\<close>
+    have \<open>pval p y = 0\<close>
+    proof-
+      have \<open>coprime k (snd (quotient_of x))\<close>
+        by (metis \<open>fst (quotient_of x) = int (p ^ nat (pval p x)) * k\<close> coprime_mult_left_iff 
+            prod.exhaust_sel quotient_of_coprime)        
+      hence \<open>quotient_of y = (k, snd (quotient_of x))\<close>
+        by (simp add: quotient_of_Fract quotient_of_denom_pos' y_def)
+      have \<open>pval p y =  int (multiplicity (int p) (fst (quotient_of y))) -
+                        int (multiplicity (int p) (snd (quotient_of y)))\<close>
+        unfolding pval_def
+        by blast
+      moreover have \<open>multiplicity (int p) (fst (quotient_of y)) = 0\<close>
+        unfolding y_def
+        using \<open>multiplicity p k = 0\<close> \<open>quotient_of y = (k, snd (quotient_of x))\<close> y_def 
+        by auto        
+      moreover have \<open>multiplicity (int p) (snd (quotient_of y)) = 0\<close>
+        unfolding y_def
+        using \<open>multiplicity (int p) (snd (quotient_of x)) = 0\<close>
+          \<open>quotient_of y = (k, snd (quotient_of x))\<close> y_def 
+        by auto
+      ultimately show ?thesis
+        by simp
+    qed
+    have \<open>x = (fst (quotient_of x))/ (snd (quotient_of x))\<close>
+      by (metis (mono_tags, lifting) of_rat_divide of_rat_of_int_eq of_real_divide of_real_of_int_eq
+          quotient_of_div surjective_pairing)
+    also have \<open>\<dots> = (p ^ (nat (pval p x)) * k)/ (snd (quotient_of x))\<close>
+      by (simp add: \<open>fst (quotient_of x) = int (p ^ nat (pval p x)) * k\<close>)
+    also have \<open>\<dots> = p ^ (nat (pval p x)) * (k/ (snd (quotient_of x)))\<close>
+      by simp
+    also have \<open>\<dots> = p ^ (nat (pval p x)) * y\<close>
+      unfolding y_def
+      by (metis True dvd_0_right of_rat_rat of_real_divide of_real_mult of_real_of_int_eq 
+          of_real_of_nat_eq)      
+    finally have \<open>x = p ^ (nat (pval p x)) * y\<close>
+      by blast
+    moreover have \<open>p powr (of_int (pval p x)) = p ^ (nat (pval p x))\<close>
+      using \<open>pval p x \<ge> 0\<close>
+      by (metis \<open>prime p\<close> of_nat_0_less_iff of_nat_nat of_nat_power powr_realpow prime_gt_0_nat) 
+    ultimately have \<open>x = (p powr (of_int (pval p x))) * y\<close>
+      by simp
+    thus ?thesis
+      using \<open>pval p y = 0\<close>
+      by blast
+  next
+    case False
+    hence \<open>\<not> ( p dvd (fst (quotient_of x)) )\<close>
+      using \<open>\<not> int p dvd fst (quotient_of x) \<or> \<not> int p dvd snd (quotient_of x)\<close>
+      by auto      
+    hence \<open>multiplicity p (fst (quotient_of x)) = 0\<close>
+      using not_dvd_imp_multiplicity_0 
+      by auto
+    hence \<open>pval p x = int (multiplicity (int p) (fst (quotient_of x))) -
+    int (multiplicity (int p) (snd (quotient_of x)))\<close>
+      unfolding pval_def
+      by blast
+    also have \<open>\<dots> = -(multiplicity (int p) (snd (quotient_of x)))\<close>
+      by (simp add: \<open>multiplicity (int p) (fst (quotient_of x)) = 0\<close>)
+    finally have \<open>pval p x = -multiplicity (int p) (snd (quotient_of x))\<close>
+      by blast
+    hence \<open>pval p x \<le> 0\<close>
+      by simp      
+    have \<open>(p ^ (nat (-pval p x))) dvd snd (quotient_of x)\<close>
+      using multiplicity_dvd
+      by (simp add: multiplicity_dvd \<open>pval p x = - int (multiplicity (int p) (snd (quotient_of x)))\<close>) 
+    hence \<open>\<exists> k::int. snd (quotient_of x) = p ^ (nat (-pval p x)) * k\<close>
+      by auto
+    then obtain k::int where \<open>snd (quotient_of x) = p ^ (nat (-pval p x)) * k\<close>
+      by blast
+    have \<open>multiplicity p k = 0\<close>
+    proof(rule classical)
+      assume \<open>\<not> (multiplicity p k = 0)\<close>
+      hence \<open>multiplicity p k \<ge> 1\<close>
+        by auto
+      hence \<open>p dvd k\<close>
+        by (meson \<open>multiplicity (int p) k \<noteq> 0\<close> not_dvd_imp_multiplicity_0)
+      hence \<open>(p ^ (nat (-pval p x)+1)) dvd (p ^ (nat (-pval p x))*k)\<close>
+        by simp
+      hence \<open>(p ^ (nat (-pval p x)+1)) dvd (snd (quotient_of x))\<close>
+        by (simp add: \<open>snd (quotient_of x) = int (p ^ nat (- pval p x)) * k\<close>)
+      hence \<open>multiplicity p (snd (quotient_of x)) \<ge> nat (-pval p x)+1\<close>
+        using multiplicity_geI \<open>1 \<le> multiplicity (int p) k\<close> \<open>pval p x \<le> 0\<close>
+        by (metis \<open>multiplicity (int p) k \<noteq> 0\<close> \<open>prime p\<close>
+            \<open>snd (quotient_of x) = int (p ^ nat (- pval p x)) * k\<close> divisors_zero 
+            multiplicity_unit_left multiplicity_zero not_prime_0 of_nat_eq_0_iff of_nat_power 
+            power_not_zero) 
+      thus ?thesis
+        by (simp add: \<open>pval p x = - int (multiplicity (int p) (snd (quotient_of x)))\<close>)        
+    qed
+    define y where \<open>y = Fract (fst (quotient_of x)) k\<close>
+    have \<open>pval p y = 0\<close>
+    proof-
+      have \<open>coprime (fst (quotient_of x)) k\<close>
+        by (metis \<open>snd (quotient_of x) = int (p ^ nat (- pval p x)) * k\<close> coprime_mult_right_iff 
+            prod.collapse quotient_of_coprime)
+      moreover have \<open>k > 0\<close>
+      proof-
+        have \<open>snd (quotient_of x) > 0\<close>
+          by (simp add: quotient_of_denom_pos')
+        thus ?thesis
+          using  \<open>snd (quotient_of x) = int (p ^ nat (- pval p x)) * k\<close>
+          by (simp add: zero_less_mult_iff)
+      qed
+      ultimately have \<open>quotient_of y = (fst (quotient_of x), k)\<close>
+        unfolding y_def
+        by (simp add: quotient_of_Fract)          
+      have \<open>pval p y =  int (multiplicity (int p) (fst (quotient_of y))) -
+                        int (multiplicity (int p) (snd (quotient_of y)))\<close>
+        unfolding pval_def
+        by blast
+      moreover have \<open>multiplicity (int p) (fst (quotient_of y)) = 0\<close>
+        unfolding y_def
+        using \<open>multiplicity (int p) (fst (quotient_of x)) = 0\<close> 
+          \<open>quotient_of y = (fst (quotient_of x), k)\<close> y_def 
+        by auto
+      moreover have \<open>multiplicity (int p) (snd (quotient_of y)) = 0\<close>
+        unfolding y_def
+        using \<open>multiplicity (int p) k = 0\<close> \<open>quotient_of y = (fst (quotient_of x), k)\<close> y_def 
+        by auto
+      ultimately show ?thesis
+        by simp
+    qed
+    have \<open>x = (fst (quotient_of x))/ (snd (quotient_of x))\<close>
+      by (metis (mono_tags, lifting) of_rat_divide of_rat_of_int_eq of_real_divide of_real_of_int_eq
+          quotient_of_div surjective_pairing)
+    also have \<open>\<dots> = (fst (quotient_of x))/(p ^ (nat (-pval p x)) * k)\<close>
+      by (simp add: \<open>snd (quotient_of x) = int (p ^ nat (- pval p x)) * k\<close>)      
+    also have \<open>\<dots> = (1/(p ^ (nat (-pval p x)))) * ((fst (quotient_of x))/k)\<close>
+      by simp
+    also have \<open>\<dots> = (1/(p ^ (nat (-pval p x)))) * y\<close>
+    proof-
+      have \<open>Fract (fst (quotient_of x)) k = (fst (quotient_of x))/k\<close>
+        by (metis (no_types, hide_lams) division_ring_divide_zero of_int_0_eq_iff of_rat_0 
+            of_rat_rat of_real_divide of_real_of_int_eq rat_number_collapse(6))
+      thus ?thesis
+        unfolding y_def
+        by simp
+    qed
+    finally have \<open>x = (1/(p ^ (nat (-pval p x)))) * y\<close>
+      by blast
+    moreover have \<open>p powr (of_int (pval p x)) = 1/(p ^ (nat (-pval p x)))\<close>
+      using \<open>pval p x \<le> 0\<close>
+        \<open>prime p\<close> div_by_1 nat_0_iff not_prime_0 of_nat_le_0_iff of_nat_power power_0 powr_int
+    proof -
+      have "p \<noteq> 0"
+        by (metis \<open>prime p\<close> not_prime_0)
+      then have "\<not> int p \<le> 0"
+        by auto
+      then have "\<not> real p \<le> 0"
+        by auto
+      then show ?thesis
+        by (simp add: \<open>pval p x \<le> 0\<close> powr_int)
+    qed   
+    ultimately have \<open>x = (p powr (of_int (pval p x))) * y\<close>
+      by simp
+    thus ?thesis
+      using \<open>pval p y = 0\<close>
+      by blast
+  qed
+qed
+
+lemma pval_additivity:
+  \<open>prime p \<Longrightarrow> u \<noteq> 0 \<Longrightarrow> v \<noteq> 0 \<Longrightarrow> pval p (u * v) = (pval p u) + (pval p v)\<close>
+proof-
+  assume \<open>prime p\<close> and \<open>u \<noteq> 0\<close> and \<open>v \<noteq> 0\<close>
   hence \<open>\<exists> y. u = ((of_int p) powr (of_int (pval p u))) * y \<and> pval p y = 0\<close>
     using pval_decomposition[where p = "p" and x = "u"]
     by simp
@@ -691,7 +938,8 @@ proof-
     by (metis mult_eq_0_iff)        
   ultimately show ?thesis
     using pval_uniq[where p = "p" and x = "u * v" and l = "pval p u + pval p v" and y = "yu * yv"]
-      \<open>prime p\<close> sorry
+      \<open>prime p\<close> \<open>u \<noteq> 0\<close> \<open>v \<noteq> 0\<close> 
+    by force 
 qed
 
 lemma pval_primepow:
@@ -857,7 +1105,7 @@ next
   also have \<open>\<dots> = p powr (-(pval p u) - (pval p v))\<close>
   proof-
     have \<open>pval p (u * v) = (pval p u) + (pval p v)\<close>
-      using \<open>prime p\<close> pval_additivity[where p = "p" and u = "u" and v = "v"]
+      using \<open>u \<noteq> 0\<close> \<open>v \<noteq> 0\<close>  \<open>prime p\<close> pval_additivity[where p = "p" and u = "u" and v = "v"]
       by blast
     hence \<open>-(pval p (u * v)) = -(pval p u) - (pval p v)\<close>
       by simp
