@@ -1172,12 +1172,12 @@ lemma pnorm_eq_zero:
   shows \<open>pnorm p x = 0 \<longleftrightarrow> x = 0\<close>
   using assms pnorm_eq_zero_D pnorm_eq_zero_I by blast
 
-(*
+
 lemma pnorm_ultratriangular:
   assumes \<open>prime p\<close>
   shows \<open>pnorm p (x + y) \<le> max (pnorm p x) (pnorm p y)\<close>
   sorry
-*)
+
 
 lemma pnorm_pval_zero_I:
   assumes \<open>prime p\<close> and \<open>pval p x = 0\<close> and \<open>x \<noteq> 0\<close>
@@ -1265,7 +1265,8 @@ proof-
 qed
 
 lemma pnorm_l_1_Fract:
-  \<open>prime p \<Longrightarrow> pnorm p x < 1 \<Longrightarrow> x \<noteq> 0 \<Longrightarrow> p dvd fst (quotient_of x) \<and>  \<not> (p dvd snd (quotient_of x))\<close>
+  \<open>prime p \<Longrightarrow> pnorm p x < 1 \<Longrightarrow> x \<noteq> 0 \<Longrightarrow>
+   p dvd fst (quotient_of x) \<and>  \<not> (p dvd snd (quotient_of x))\<close>
 proof-
   assume \<open>prime p\<close> and \<open>pnorm p x < 1\<close> and \<open>x \<noteq> 0\<close>
   have \<open>pval p x > 0\<close>
@@ -1421,5 +1422,15 @@ next
     by (metis assms(1) dvd_0_right fst_conv pnorm_pval_zero_I pval_unit_dvd_D rat_zero_code)    
 qed
 
+lemma pnorm_1:
+\<open>pnorm 2 1 = 1\<close>
+proof-
+  have \<open>pval 2 1 = 0\<close>
+    unfolding pval_def
+    by auto
+  thus ?thesis
+    unfolding pnorm_def
+    by auto
+qed
 
 end
