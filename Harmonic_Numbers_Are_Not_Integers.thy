@@ -36,6 +36,26 @@ lemma harmonic_numbers_2norm:
 proof-
   define l where \<open>l = nat(\<lfloor>log 2 n\<rfloor>)\<close>
   define H where \<open>H = (\<Sum>k = 1..n. (Fract 1 (of_nat k)))\<close>
+  have \<open>prime (2::nat)\<close>
+    by simp
+  have \<open>l \<ge> 1\<close>
+  proof-
+    have \<open>log 2 n \<ge> 1\<close>
+      using \<open>n \<ge> 2\<close>
+      by auto
+    hence \<open>\<lfloor>log 2 n\<rfloor> \<ge> 1\<close>
+      by simp
+    thus ?thesis 
+      using \<open>l = nat(\<lfloor>log 2 n\<rfloor>)\<close> \<open>1 \<le> \<lfloor>log 2 (real n)\<rfloor>\<close> \<open>l = nat \<lfloor>log 2 (real n)\<rfloor>\<close> nat_mono 
+      by presburger            
+  qed
+  hence \<open>(2::nat)^l \<ge> 2\<close>
+  proof -
+    have "(2::nat) ^ 1 \<le> 2 ^ l"
+      by (metis \<open>1 \<le> l\<close> one_le_numeral power_increasing)
+    then show ?thesis
+      by (metis semiring_normalization_rules(33))
+  qed
   have \<open>pnorm 2 ((2^l) * H) = 1\<close>
   proof-
     define pre_H where \<open>pre_H = (\<Sum>k = 1..(2^l-1). (Fract 1 (of_nat k)))\<close>
@@ -48,28 +68,11 @@ proof-
         by auto
       also have \<open>\<dots> = (\<Sum>k = 1..2^l. (Fract 1 (of_nat k)))\<close>
       proof-
-        have \<open>l \<ge> 1\<close>
-        proof-
-          have \<open>log 2 n \<ge> 1\<close>
-            using \<open>n \<ge> 2\<close>
-            by auto
-          hence \<open>\<lfloor>log 2 n\<rfloor> \<ge> 1\<close>
-            by simp
-          thus ?thesis 
-            using \<open>l = nat(\<lfloor>log 2 n\<rfloor>)\<close> \<open>1 \<le> \<lfloor>log 2 (real n)\<rfloor>\<close> \<open>l = nat \<lfloor>log 2 (real n)\<rfloor>\<close> nat_mono 
-            by presburger            
-        qed
-        hence \<open>(2::nat)^l \<ge> 2\<close>
-        proof -
-          have "(2::nat) ^ 1 \<le> 2 ^ l"
-            by (metis \<open>1 \<le> l\<close> one_le_numeral power_increasing)
-          then show ?thesis
-            by (metis semiring_normalization_rules(33))
-        qed
-        hence \<open>(\<Sum>k = 1..2 ^ l - 1. real_of_rat (Fract 1 (int k))) 
+        have \<open>(\<Sum>k = 1..2 ^ l - 1. real_of_rat (Fract 1 (int k))) 
                 + real_of_rat (Fract 1 (int (2 ^ l))) 
                 = (\<Sum>k = 1..2 ^ l. real_of_rat (Fract 1 (int k)))\<close>
           using sum_last[where n = \<open>2^l\<close> and a = \<open>(\<lambda> k. of_rat (Fract 1 (of_nat k)))\<close>]
+            \<open>(2::nat)^l \<ge> 2\<close>
           by auto
         moreover have \<open>(\<Sum>k = 1..2 ^ l - 1. real_of_rat (Fract 1 (int k))) 
                 + real_of_rat (Fract 1 (int (2 ^ l)))
@@ -164,7 +167,192 @@ proof-
         by blast
     qed
     moreover have \<open>pnorm 2 ((2^l) * pre_H) < 1\<close>
-      sorry
+    proof-
+      have \<open>(2^l) * pre_H = (\<Sum>k = 1..2 ^ l - 1. (2^l) * (Fract 1 (int k)))\<close>
+        unfolding pre_H_def
+        using Groups_Big.semiring_0_class.sum_distrib_left[where r = \<open>2^l\<close> 
+            and f = \<open>(\<lambda> k. Fract 1 (int k))\<close> and A = \<open>{1..(2^l - 1)}\<close>]
+        by blast
+      also have \<open>\<dots> = (\<Sum>k = 1..2 ^ l - 1. (Fract (2^l) (int k)))\<close>
+        by (metis Fract_of_nat_eq mult.left_neutral mult.right_neutral mult_rat of_nat_numeral 
+            of_nat_power)
+      finally have \<open>2 ^ l * pre_H =
+              (\<Sum>k = 1..2 ^ l - 1. Fract (2 ^ l) (int k))\<close>
+        by blast
+      hence \<open>pnorm 2 (2 ^ l * pre_H) =
+              pnorm 2 (\<Sum>k = 1..2 ^ l - 1. Fract (2 ^ l) (int k))\<close>
+        by simp
+      also have \<open>\<dots> \<le>
+              Max ((\<lambda> k. pnorm 2 (Fract (2 ^ l) (int k)))`{1..2^l-1})\<close>
+      proof-
+        have \<open>pnorm 2 (\<Sum>k = 1..2 ^ l - 1. Fract (2 ^ l) (int k))
+           = pnorm 2 (sum (\<lambda> k. Fract (2 ^ l) (int k)) {1..(2::nat)^l-1})\<close>
+          by blast
+        also have \<open>\<dots> \<le> Max ((\<lambda> k. pnorm 2 (Fract (2 ^ l) (int k)))`{1..2^l-1})\<close>
+          using \<open>prime 2\<close>  pnorm_ultratriangular_sum[where p = 2 and A = \<open>{1..2^l-1}\<close> 
+              and x = \<open>(\<lambda> k. (Fract (2 ^ l) (int k)))\<close>]
+          by auto
+        finally show ?thesis
+          using \<open>pnorm 2 (\<Sum>k = 1..2 ^ l - 1. Fract (2 ^ l) (int k)) \<le> (MAX k\<in>{1..2 ^ l - 1}. 
+              pnorm 2 (Fract (2 ^ l) (int k)))\<close> 
+          by blast
+      qed
+      also have \<open>\<dots> < 1\<close>
+      proof-
+        have \<open>finite ((\<lambda> k. pnorm 2 (Fract (2 ^ l) (int k)))`{1..2^l-1})\<close>
+          by blast          
+        moreover have \<open>((\<lambda> k. pnorm 2 (Fract (2 ^ l) (int k)))`{1..2^l-1}) \<noteq> {}\<close>
+        proof-
+          have \<open>(1::nat) \<le> (2::nat)^l-1\<close>
+            using \<open>(2::nat)^l \<ge> 2\<close>
+            by auto
+          hence \<open>{(1::nat)..(2::nat)^l-1} \<noteq> {}\<close>
+            using Set_Interval.order_class.atLeastatMost_empty_iff2[where a = "1::nat" 
+                and b = "(2::nat)^l - 1"]
+            by auto
+          thus ?thesis
+            by blast
+        qed
+        moreover have \<open>x \<in> ((\<lambda> k. pnorm 2 (Fract (2 ^ l) (int k)))`{1..2^l-1}) \<Longrightarrow> x < 1\<close>
+          for x
+        proof-
+          assume \<open>x \<in> ((\<lambda> k. pnorm 2 (Fract (2 ^ l) (int k)))`{1..2^l-1})\<close>
+          then obtain k where \<open>x = pnorm 2 (Fract (2 ^ l) (int k))\<close> and \<open>k \<in> {1..2^l-1}\<close>
+            by blast
+          have \<open>pnorm 2 (Fract (2 ^ l) (int k)) < 1\<close>
+          proof-
+            have \<open>Fract (2 ^ l) (int k) = (2 ^ l)*(Fract 1 (int k))\<close>
+              by (metis (no_types) Fract_of_nat_eq mult_numeral_1 mult_of_nat_commute mult_rat 
+                  numeral_One of_nat_numeral of_nat_power)              
+            hence \<open>pnorm 2 (Fract (2 ^ l) (int k)) = pnorm 2 ((2 ^ l)*(Fract 1 (int k)))\<close>
+              by simp
+            also have \<open>\<dots> < 1\<close>
+            proof-
+              have \<open>pnorm 2 ((2::rat)^l) = 1/(2::nat)^l\<close>
+                using  \<open>prime (2::nat)\<close> pnorm_primepow[where p = "(2::nat)"]
+                by auto
+              moreover have \<open>pnorm 2 (Fract 1 k) < (2::nat)^l\<close>
+              proof-
+                have \<open>2 powr (- pval 2 (Fract 1 k)) < (2::nat)^l\<close>
+                proof-
+                  have \<open>pval 2 (Fract k 1) < l\<close>
+                  proof-
+                    have \<open>pval 2 (Fract k 1) = multiplicity (2::int) k\<close>
+                      using \<open>prime 2\<close>  pval_integer[where p = 2 and k = k]
+                      by auto
+                    also have \<open>\<dots> < l\<close>
+                    proof(rule classical)
+                      assume \<open>\<not>(multiplicity 2 (int k) < int l)\<close>
+                      hence \<open>multiplicity 2 (int k) \<ge> int l\<close>
+                        by simp
+                      hence \<open>((2::nat)^l) dvd k\<close>
+                        by (metis (full_types) int_dvd_int_iff multiplicity_dvd' of_nat_numeral
+                            of_nat_power zle_int)
+                      hence \<open>(2::nat)^l \<le> k\<close>
+                        using \<open>k \<in> {1..2 ^ l - 1}\<close> dvd_nat_bounds
+                        by auto
+                      moreover have \<open>k < (2::nat)^l\<close>
+                        using  \<open>k\<in>{1..(2::nat)^l - 1}\<close>
+                        by auto                        
+                      ultimately show ?thesis
+                        by linarith 
+                    qed
+                    finally show ?thesis
+                      by blast
+                  qed
+                  hence \<open>- pval 2 (Fract 1 k) < l\<close>
+                    using \<open>prime 2\<close> pval_inverse[where p = "2" and x = \<open>Fract 1 k\<close>] 
+                      Fract_of_int_quotient 
+                    by auto
+                  hence \<open>2 powr (- pval 2 (Fract 1 k)) < 2 powr l\<close>
+                    by auto
+                  also have \<open>\<dots> = (2::nat)^l\<close>
+                  proof -
+                    have f1: "\<not> 2 \<le> (1::real)"
+                      by auto
+                    have f2: "\<forall>x1. ((1::real) < x1) = (\<not> x1 \<le> 1)"
+                      by force
+                    have "real (2 ^ l) = 2 ^ l"
+                      by simp
+                    hence "real l = log 2 (real (2 ^ l))"
+                      using f2 f1 by (meson log_of_power_eq)
+                    thus ?thesis
+                      by simp
+                  qed
+                  finally show ?thesis 
+                    by blast
+                qed
+                moreover have \<open>pnorm 2 (Fract 1 k) = 2 powr (- pval 2 (Fract 1 k))\<close>
+                proof-
+                  have \<open>k \<noteq> 0\<close>
+                    using \<open>k\<in>{1..2^l - 1}\<close>
+                    by simp
+                  hence \<open>Fract 1 k \<noteq> 0\<close>
+                    by (smt Fract_le_zero_iff le_numeral_extra(3) of_nat_le_0_iff)
+                  thus \<open>pnorm 2 (Fract 1 k) = 2 powr (- pval 2 (Fract 1 k))\<close>
+                    using \<open>prime 2\<close>
+                    by (simp add: pnorm_simplified)
+                qed
+                ultimately show ?thesis
+                  by simp
+              qed
+              moreover have \<open>pnorm 2 ((2::rat)^l) > 0\<close>
+              proof-
+                have \<open>(2::rat)^l \<noteq> 0\<close>
+                  by simp                  
+                moreover have \<open>pnorm 2 ((2::rat)^l) \<ge> 0\<close>
+                  using \<open>prime (2::nat)\<close> pnorm_geq_zero
+                  by simp                  
+                ultimately show ?thesis
+                  using pnorm_eq_zero \<open>prime (2::nat)\<close>
+                  by (simp add: less_eq_real_def)                  
+              qed
+              moreover have \<open>pnorm 2 (Fract 1 k) > 0\<close>
+              proof-
+                have \<open>Fract 1 k \<noteq> 0\<close>
+                  using \<open>k \<in> {1..2^l-1}\<close>
+                  by (metis Fract_le_zero_iff atLeastAtMost_iff int.nat_pow_one int.zero_not_one int_ops(1) less_le_not_le less_one linorder_neqE_nat nat_int_comparison(2) not_less0 order_refl power2_less_eq_zero_iff)
+                moreover have \<open>pnorm 2 (Fract 1 k) \<ge> 0\<close>
+                  using \<open>prime (2::nat)\<close> pnorm_geq_zero
+                  by blast
+                ultimately show ?thesis
+                  using pnorm_eq_zero \<open>prime (2::nat)\<close>
+                  by (simp add: less_eq_real_def)                  
+              qed
+              ultimately have \<open>(pnorm 2 ((2::rat)^l))*(pnorm 2 (Fract 1 k)) 
+                  < (1/(2::nat)^l)*((2::nat)^l)\<close>
+                by simp
+              also have \<open>\<dots> = 1\<close>
+              proof-
+                have \<open>(2::nat)^l \<noteq> 0\<close>
+                  by simp                  
+                thus ?thesis
+                  by simp 
+              qed
+              finally have \<open>(pnorm 2 ((2::rat)^l))*(pnorm 2 (Fract 1 k)) < 1\<close>
+                by blast
+              moreover have \<open>(pnorm 2 ((2::rat)^l))*(pnorm 2 (Fract 1 k)) 
+                  = pnorm 2 (2 ^ l * Fract 1 (int k))\<close>
+                using \<open>prime 2\<close>
+                by (simp add: pnorm_multiplicativity)
+              ultimately show ?thesis
+                by simp
+            qed
+            finally show \<open>pnorm 2 (Fract (2 ^ l) (int k)) < 1\<close>
+              by blast
+          qed
+          thus ?thesis
+            using \<open>x = pnorm 2 (Fract (2 ^ l) (int k))\<close>
+            by blast
+        qed
+        ultimately show ?thesis 
+          using Lattices_Big.linorder_class.Max_less_iff
+            [where A = "((\<lambda> k. pnorm 2 (Fract (2 ^ l) (int k)))`{1..2^l-1})"]
+          by blast
+      qed
+      finally show \<open>pnorm 2 (2 ^ l * pre_H) < 1\<close>
+        by blast
+    qed
     ultimately have \<open>pnorm 2 ((2^l) * (Fract 1 (of_nat (2^l))) + (2^l) * pre_H) = 1\<close>
       using pnorm_unit_ball[where p = 2 and x = "(2^l) *  (Fract 1 (of_nat (2^l)))" and y = "(2^l) * pre_H"]
       by simp

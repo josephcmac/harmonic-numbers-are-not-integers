@@ -442,6 +442,36 @@ next
   qed
 qed
 
+lemma pval_integer:
+  \<open>prime p \<Longrightarrow> pval p (Fract k 1) = multiplicity p k\<close>
+proof-
+  assume \<open>prime p\<close>
+  have \<open>pval p (Fract k 1) = int (multiplicity (int p) (fst (quotient_of (Fract k 1)))) -
+    int (multiplicity (int p) (snd (quotient_of (Fract k 1))))\<close>
+    unfolding pval_def
+    by blast
+  moreover have \<open>int (multiplicity (int p) (snd (quotient_of (Fract k 1)))) = 0\<close>
+  proof-
+    have \<open>snd (quotient_of (Fract k 1)) = 1\<close>
+      using Fract_of_int_eq Rat.of_int_def quotient_of_int 
+      by auto
+    moreover have \<open>multiplicity p 1 = 0\<close>
+      by simp
+    ultimately show ?thesis 
+      by auto
+  qed
+  moreover have \<open>int (multiplicity (int p) (fst (quotient_of (Fract k 1)))) = multiplicity p k\<close>
+  proof-
+    have \<open>fst (quotient_of (Fract k 1)) = k\<close>
+      using Fract_of_int_eq Rat.of_int_def quotient_of_int 
+      by auto      
+    thus ?thesis
+      by simp 
+  qed
+  ultimately show ?thesis
+    by auto
+qed
+
 lemma pval_inverse:
   \<open>prime p \<Longrightarrow> pval p (1/x) = - pval p x\<close>
 proof-
@@ -1172,13 +1202,6 @@ lemma pnorm_eq_zero:
   shows \<open>pnorm p x = 0 \<longleftrightarrow> x = 0\<close>
   using assms pnorm_eq_zero_D pnorm_eq_zero_I by blast
 
-
-lemma pnorm_ultratriangular:
-  assumes \<open>prime p\<close>
-  shows \<open>pnorm p (x + y) \<le> max (pnorm p x) (pnorm p y)\<close>
-  sorry
-
-
 lemma pnorm_pval_zero_I:
   assumes \<open>prime p\<close> and \<open>pval p x = 0\<close> and \<open>x \<noteq> 0\<close>
   shows \<open>pnorm p x = 1\<close>
@@ -1423,7 +1446,7 @@ next
 qed
 
 lemma pnorm_1:
-\<open>pnorm 2 1 = 1\<close>
+  \<open>pnorm 2 1 = 1\<close>
 proof-
   have \<open>pval 2 1 = 0\<close>
     unfolding pval_def
@@ -1432,5 +1455,17 @@ proof-
     unfolding pnorm_def
     by auto
 qed
+
+lemma pnorm_ultratriangular:
+  assumes \<open>prime p\<close>
+  shows \<open>pnorm p (x + y) \<le> max (pnorm p x) (pnorm p y)\<close>
+  sorry
+
+
+lemma pnorm_ultratriangular_sum:
+  fixes p::nat and A::\<open>nat set\<close> and x::\<open>nat \<Rightarrow> rat\<close>
+  assumes \<open>prime p\<close> and \<open>finite A\<close>
+  shows \<open>pnorm p (sum x A) \<le> Max ((\<lambda> i. pnorm p (x i)) ` A) \<close>
+  sorry
 
 end
