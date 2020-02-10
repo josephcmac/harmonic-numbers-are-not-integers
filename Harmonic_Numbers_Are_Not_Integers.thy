@@ -191,7 +191,8 @@ proof-
         also have \<open>\<dots> \<le> Max ((\<lambda> k. pnorm 2 (Fract (2 ^ l) (int k)))`{1..2^l-1})\<close>
           using \<open>prime 2\<close>  pnorm_ultratriangular_sum[where p = 2 and A = \<open>{1..2^l-1}\<close> 
               and x = \<open>(\<lambda> k. (Fract (2 ^ l) (int k)))\<close>]
-          by auto
+          by (metis Nat.le_diff_conv2 \<open>2 \<le> 2 ^ l\<close> atLeastatMost_empty_iff2 finite_atLeastAtMost 
+              nat_1_add_1 one_le_power prime_ge_1_nat)
         finally show ?thesis
           using \<open>pnorm 2 (\<Sum>k = 1..2 ^ l - 1. Fract (2 ^ l) (int k)) \<le> (MAX k\<in>{1..2 ^ l - 1}. 
               pnorm 2 (Fract (2 ^ l) (int k)))\<close> 

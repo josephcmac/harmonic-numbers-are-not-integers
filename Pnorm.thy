@@ -1461,11 +1461,95 @@ lemma pnorm_ultratriangular:
   shows \<open>pnorm p (x + y) \<le> max (pnorm p x) (pnorm p y)\<close>
   sorry
 
-
 lemma pnorm_ultratriangular_sum:
   fixes p::nat and A::\<open>nat set\<close> and x::\<open>nat \<Rightarrow> rat\<close>
-  assumes \<open>prime p\<close> and \<open>finite A\<close>
-  shows \<open>pnorm p (sum x A) \<le> Max ((\<lambda> i. pnorm p (x i)) ` A) \<close>
-  sorry
+  assumes \<open>prime p\<close>
+  shows \<open>finite A \<Longrightarrow> A \<noteq> {} \<Longrightarrow> pnorm p (sum x A) \<le> Max ((\<lambda> i. pnorm p (x i)) ` A)\<close>
+proof-
+  {  have \<open>\<And> A. card A = Suc n \<Longrightarrow> pnorm p (sum x A) \<le> Max ((\<lambda> i. pnorm p (x i)) ` A)\<close>
+      for n
+    proof(induction n)
+      case 0
+      hence \<open>\<exists> a. A = {a}\<close>
+        by (metis One_nat_def card_1_singletonE)
+      then obtain a where \<open>A = {a}\<close>
+        by blast
+      have \<open>pnorm p (sum x {a}) = pnorm p (x a)\<close>
+        by simp        
+      moreover have \<open>(MAX i\<in>{a}. pnorm p (x i)) = pnorm p (x a)\<close>
+        by simp        
+      ultimately show ?case
+        by (simp add: \<open>A = {a}\<close>)
+    next
+      case (Suc n)
+      have \<open>card A = Suc (Suc n)\<close>
+        by (simp add: Suc.prems)
+      hence \<open>\<exists> a A'. A = insert a A' \<and> a \<notin> A'\<close>
+      proof -
+        have "\<And>n. card ({}::nat set) \<noteq> Suc n"
+          by (metis card_atMost card_subset_eq empty_subsetI finite_atMost not_empty_eq_Iic_eq_empty)
+        then show ?thesis
+          by (metis (no_types) Diff_iff Suc.prems all_not_in_conv insertI1 insert_Diff_single insert_absorb)
+      qed        
+      then obtain a A' where \<open>A = insert a A'\<close> and \<open>a \<notin> A'\<close>
+        by blast
+      hence \<open>card A' = Suc n\<close>
+        using \<open>card A = Suc (Suc n)\<close>
+        by (metis card_insert_if card_le_Suc_iff finite_insert le_refl nat.inject)
+      have \<open>finite A'\<close>
+        using \<open>card A' = Suc n\<close> card_infinite 
+        by fastforce
+      have \<open>sum x A =  x a + (sum x A')\<close>
+        using Groups_Big.comm_monoid_add_class.sum.insert_remove[where A = A and x = "a" and g = "x"]
+          \<open>A = insert a A'\<close> \<open>a \<notin> A'\<close>
+        by (simp add: \<open>finite A'\<close>) 
+      hence \<open>pnorm p (sum x A) = pnorm p (x a + (sum x A'))\<close>
+        by simp
+      also have \<open>\<dots> \<le> max (pnorm p (x a)) (pnorm p (sum x A'))\<close>
+        by (simp add: assms pnorm_ultratriangular)
+      also have \<open>\<dots> \<le> Max ((\<lambda> i. pnorm p (x i)) ` A)\<close>
+      proof-
+        have \<open>(\<lambda> i. pnorm p (x i)) ` A = insert (pnorm p (x a)) ((\<lambda> i. pnorm p (x i)) ` A')\<close>
+          using  \<open>A = insert a A'\<close> \<open>a \<notin> A'\<close>
+          by simp
+        hence \<open>Max ((\<lambda> i. pnorm p (x i)) ` A) = Max (insert (pnorm p (x a)) ((\<lambda> i. pnorm p (x i)) ` A'))\<close>
+          by auto
+        also have \<open>\<dots> = max (pnorm p (x a)) (Max ((\<lambda> i. pnorm p (x i)) ` A'))\<close>
+        proof-
+          have \<open>finite ((\<lambda>i. pnorm p (x i)) ` A')\<close>
+            using \<open>finite A'\<close>
+            by blast
+          moreover have \<open>((\<lambda>i. pnorm p (x i)) ` A') \<noteq> {}\<close>
+          proof-
+            have \<open>A' \<noteq> {}\<close>
+              using \<open>card A' = Suc n\<close>
+              by auto
+            thus ?thesis
+              by simp
+          qed
+          ultimately show ?thesis 
+            using Lattices_Big.linorder_class.Max_insert[where A = "((\<lambda> i. pnorm p (x i)) ` A')" 
+                and x = "pnorm p (x a)"] 
+            by blast
+        qed
+        finally show ?thesis
+          using Suc.IH \<open>card A' = Suc n\<close> 
+          by fastforce 
+      qed
+      finally show \<open>pnorm p (sum x A) \<le> Max ((\<lambda> i. pnorm p (x i)) ` A)\<close> 
+        by blast
+    qed
+  } note 1 = this
+  assume \<open>finite A\<close> and \<open>A \<noteq> {}\<close>
+  hence \<open>\<exists> n. card A = Suc n\<close>
+    by (metis card.insert_remove finite.cases)
+  then obtain n where \<open>card A = Suc n\<close>
+    by blast
+  thus ?thesis
+    using 1 
+    by blast
+qed
+
+
 
 end
