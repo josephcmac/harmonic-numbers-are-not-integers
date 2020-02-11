@@ -1456,10 +1456,479 @@ proof-
     by auto
 qed
 
+lemma pnorm_decomposition:
+  \<open>prime p \<Longrightarrow> x \<noteq> 0 \<Longrightarrow> \<exists> y::rat. (x::rat) = (p powr (pval p x)) * y \<and> pnorm p y = 1\<close>
+proof-
+  assume \<open>prime p\<close> and \<open>x \<noteq> 0\<close>
+  hence \<open>\<exists>y::rat. x = (p powr (pval p x)) * y \<and> pval p y = 0\<close>
+    using pval_decomposition 
+    by auto
+  then obtain y::rat where \<open>x = (p powr (pval p x)) * y\<close> and \<open>pval p y = 0\<close>
+    by blast
+  have \<open>pnorm p y = 1\<close>
+  proof-
+    have \<open>y \<noteq> 0\<close>
+      using \<open>x \<noteq> 0\<close> \<open>x = (p powr (pval p x)) * y\<close>
+      by auto
+    hence \<open>pnorm p y = p powr (- (pval p y))\<close>
+      using pnorm_simplified 
+      by auto
+    thus ?thesis
+      using \<open>prime p\<close> \<open>pval p y = 0\<close> of_nat_0_eq_iff 
+      by auto      
+  qed
+  thus ?thesis 
+    using \<open>x = (p powr (pval p x)) * y\<close>
+    by blast
+qed
+
+lemma pval_pnorm: \<open>pval p x = pval p y \<Longrightarrow> x \<noteq> 0 \<Longrightarrow> y \<noteq> 0 \<Longrightarrow> pnorm p x = pnorm p y\<close>
+  using pnorm_simplified
+  by auto
+
+lemma pnorm_pval: \<open>prime p \<Longrightarrow> pnorm p x = pnorm p y \<Longrightarrow> x \<noteq> 0 \<Longrightarrow> y \<noteq> 0 \<Longrightarrow> pval p x = pval p y\<close>
+proof-
+  assume \<open>prime p\<close> and \<open>pnorm p x = pnorm p y\<close> and \<open>x \<noteq> 0\<close> and \<open>y \<noteq> 0\<close>
+  have \<open>pnorm p x = p powr (- pval p x)\<close>
+    using pnorm_simplified[where p = p and x = x] \<open>x \<noteq> 0\<close>
+    by simp
+  moreover have \<open>pnorm p y = p powr (- pval p y)\<close>
+    using pnorm_simplified[where p = p and x = y] \<open>y \<noteq> 0\<close>
+    by simp
+  ultimately have \<open>p powr (- pval p x) = p powr (- pval p y)\<close>
+    using \<open>pnorm p x = pnorm p y\<close>
+    by simp
+  moreover have \<open>p > 1\<close>
+    using \<open>prime p\<close> prime_nat_iff 
+    by blast
+  ultimately have \<open>- pval p x = - pval p y\<close>
+    by (simp add: powr_inj)
+  thus ?thesis
+    by auto
+qed  
+
 lemma pnorm_ultratriangular:
   assumes \<open>prime p\<close>
   shows \<open>pnorm p (x + y) \<le> max (pnorm p x) (pnorm p y)\<close>
-  sorry
+proof-
+  {
+    have \<open>pnorm p x = pnorm p y \<Longrightarrow> pnorm p (x + y) \<le> pnorm p y\<close>
+      for x y
+    proof(cases \<open>x = 0\<close>)
+      case True
+      thus ?thesis
+        by simp 
+    next
+      assume \<open>pnorm p x = pnorm p y\<close>
+      case False
+      hence \<open>x \<noteq> 0\<close>
+        by blast
+      moreover have \<open>y \<noteq> 0\<close>
+      proof(rule classical)
+        assume \<open>\<not>(y \<noteq> 0)\<close>
+        hence \<open>y = 0\<close>
+          by blast
+        hence \<open>pnorm p y = 0\<close>
+          by (simp add: assms pnorm_eq_zero)
+        hence \<open>pnorm p x = 0\<close>
+          using \<open>pnorm p x = pnorm p y\<close>
+          by simp
+        moreover have \<open>pnorm p x \<noteq> 0\<close>
+          using \<open>prime p\<close> \<open>x \<noteq> 0\<close> pnorm_eq_zero_I 
+          by blast
+        ultimately show ?thesis
+          by blast
+      qed
+      ultimately have \<open>pval p x = pval p y\<close>
+        using \<open>prime p\<close> \<open>pnorm p x = pnorm p y\<close> pnorm_pval 
+        by blast
+
+      show ?thesis
+      proof(cases \<open>x + y = 0\<close>)
+        case True
+        thus ?thesis
+          by (simp add: assms pnorm_eq_zero_D pnorm_geq_zero) 
+      next
+        case False
+        hence \<open>x + y \<noteq> 0\<close>
+          by blast
+
+        have \<open>\<exists> u::rat. x = (p powr (pval p x)) * u \<and> pnorm p u = 1\<close>
+          using pnorm_decomposition
+          by (simp add: \<open>x \<noteq> 0\<close> assms)
+        then obtain u::rat where \<open>x = (p powr (pval p x)) * u\<close> and \<open>pnorm p u = 1\<close>
+          by blast
+        have \<open>\<exists> v::rat. y = (p powr (pval p y)) * v \<and> pnorm p v = 1\<close>
+          using pnorm_decomposition
+          by (simp add: \<open>y \<noteq> 0\<close> assms)
+        then obtain v::rat where \<open>y = (p powr (pval p y)) * v\<close> and \<open>pnorm p v = 1\<close>
+          by blast
+        have \<open>y = (p powr (pval p x)) * v\<close>
+          using  \<open>y = (p powr (pval p y)) * v\<close> \<open>pval p x = pval p y\<close>
+          by simp
+        have \<open>x + y = (p powr (pval p x)) * u + (p powr (pval p x)) * v\<close>
+          by (simp add: \<open>of_rat x = complex_of_real (real p powr real_of_int (pval p x)) * of_rat u\<close>
+              \<open>of_rat y = complex_of_real (real p powr real_of_int (pval p y)) * of_rat v\<close> 
+              \<open>pval p x = pval p y\<close> of_rat_add)
+        also have \<open>\<dots> = (p powr (pval p x)) * (u + v)\<close>
+          by (simp add: linordered_field_class.sign_simps(18) of_rat_add)
+        finally have \<open>x + y = (p powr (pval p x)) * (u + v)\<close>
+          by simp
+        have \<open>\<exists> k::nat. \<exists> w::rat. u + v = (p ^ k) * w \<and> pnorm p w = 1\<close>
+        proof-
+          have \<open>u = Fract (fst (quotient_of u)) (snd (quotient_of u))\<close>
+            by (metis normalize_stable prod.collapse quotient_of_Fract quotient_of_coprime 
+                quotient_of_denom_pos' quotient_of_inject)
+          moreover have \<open>v = Fract (fst (quotient_of v)) (snd (quotient_of v))\<close>
+            by (metis normalize_stable prod.collapse quotient_of_Fract quotient_of_coprime 
+                quotient_of_denom_pos' quotient_of_inject)
+          ultimately have \<open>u + v = Fract ((fst (quotient_of u))*(snd (quotient_of v)) 
+                           + (snd (quotient_of u))*(fst (quotient_of v)))  
+                          ( (snd (quotient_of u))*(snd (quotient_of v)) )\<close>
+            by (metis add_rat less_int_code(1) mult.commute quotient_of_denom_pos')
+          have \<open>snd (quotient_of (u+v)) dvd ((snd (quotient_of u))*(snd (quotient_of v)))\<close>
+            by (simp add: \<open>u + v = Fract (fst (quotient_of u) * snd (quotient_of v) 
+          + snd (quotient_of u) * fst (quotient_of v)) (snd (quotient_of u) * snd (quotient_of v))\<close>
+                snd_quotient_of_divide)
+          moreover have \<open>\<not>(p dvd ((snd (quotient_of u))*(snd (quotient_of v))))\<close>
+          proof-
+            have \<open>\<not>(p dvd ((snd (quotient_of u))))\<close>
+              by (simp add: \<open>pnorm p u = 1\<close> assms pnorm_1_Fract)            
+            moreover have \<open>\<not>(p dvd ((snd (quotient_of v))))\<close>
+              by (simp add: \<open>pnorm p v = 1\<close> assms pnorm_1_Fract)            
+            ultimately show ?thesis
+              by (meson assms prime_dvd_multD prime_nat_int_transfer)            
+          qed
+          ultimately have \<open>\<not>(p dvd (snd (quotient_of (u + v))))\<close>
+            using dvd_trans 
+            by blast
+          have \<open>u + v \<noteq> 0\<close>
+          proof(rule classical)
+            assume \<open>\<not> (u + v \<noteq> 0)\<close>
+            hence \<open>u + v = 0\<close>
+              by blast
+            hence \<open>x + y = 0\<close>
+              using \<open>x + y = (p powr (pval p x)) * (u + v)\<close>
+              by simp
+            thus ?thesis
+              using False 
+              by auto                
+          qed
+          define k where \<open>k = multiplicity p (fst (quotient_of (u + v)))\<close>
+          have \<open>\<exists> m::int. fst (quotient_of (u + v)) = p ^ k * m\<close>
+            unfolding k_def
+            by (metis dvd_def multiplicity_dvd of_nat_power)
+          then obtain m::int where \<open>fst (quotient_of (u + v)) = p ^ k * m\<close>
+            by blast
+          have \<open>\<not> (p dvd m)\<close>
+          proof(rule classical)
+            assume \<open>\<not> (\<not> (p dvd m))\<close>
+            hence \<open>p dvd m\<close>
+              by blast
+            hence \<open>(p^k * p) dvd (p^k * m)\<close>
+              by auto
+            hence \<open>p^(Suc k) dvd (p^k * m)\<close>
+              by simp
+            hence \<open>p^(Suc k) dvd (fst (quotient_of (u + v)))\<close>
+              by (simp add: \<open>fst (quotient_of (u + v)) = int (p ^ k) * m\<close>)
+            moreover have \<open>\<not> is_unit (int p)\<close>
+              using assms 
+              by auto            
+            moreover have \<open>fst (quotient_of (u + v)) \<noteq> 0\<close>
+            proof(rule classical)
+              assume \<open>\<not> (fst (quotient_of (u + v)) \<noteq> 0)\<close>
+              hence \<open>fst (quotient_of (u + v)) = 0\<close>
+                by auto
+              moreover have \<open>u + v = Fract (fst (quotient_of (u + v))) (snd (quotient_of (u + v)))\<close>
+                unfolding quotient_of_def
+                by (smt quotient_of_unique theI')             
+              ultimately have \<open>u + v = 0\<close>
+                using rat_number_collapse(1) 
+                by auto
+              thus ?thesis 
+                using \<open>u + v \<noteq> 0\<close>
+                by blast              
+            qed
+            ultimately have \<open>Suc k \<le> multiplicity p (fst (quotient_of (u + v)))\<close>
+              using multiplicity_geI[where p = p and x = "fst (quotient_of (u + v))" and n = "Suc k"]
+              by auto
+            thus ?thesis
+              using \<open>fst (quotient_of (u + v)) = p ^ k * m\<close> Suc_n_not_le_n k_def 
+              by blast
+          qed
+          define w where \<open>w = Fract m (snd (quotient_of (u + v)))\<close>
+          hence \<open>u + v = (p ^ k) * w\<close> 
+          proof-
+            have \<open>u + v = Fract (fst (quotient_of (u + v))) (snd (quotient_of (u + v)))\<close>
+              unfolding quotient_of_def
+              by (smt quotient_of_unique theI')             
+            also have \<open>\<dots> = Fract ((p ^ k) * m) (snd (quotient_of (u + v)))\<close>
+              by (simp add: \<open>fst (quotient_of (u + v)) = int (p ^ k) * m\<close>)            
+            also have \<open>\<dots> = (Fract (p ^ k) 1) 
+                        * (Fract m (snd (quotient_of (u + v))))\<close>
+              by simp            
+            also have \<open>\<dots> = (p ^ k) *  Fract m (snd (quotient_of (u + v)))\<close>
+            proof-
+              have \<open>(Fract (p ^ k) 1) = p ^ k\<close>
+                by (metis Fract_of_nat_eq of_rat_of_nat_eq)              
+              thus ?thesis
+                by (metis of_rat_mult)               
+            qed
+            finally show ?thesis
+              unfolding w_def
+              by auto
+          qed
+          moreover have \<open>pnorm p w = 1\<close>
+          proof-
+            have \<open>\<not> (p dvd fst (quotient_of w))\<close>
+              unfolding w_def
+              by (metis \<open>\<not> int p dvd m\<close> \<open>\<not> int p dvd snd (quotient_of (u + v))\<close> dvd_0_right dvd_def
+                  dvd_mult_left fst_quotient_of_divide)               
+            moreover have \<open>\<not> (p dvd snd (quotient_of w))\<close>
+              unfolding w_def
+              using \<open>\<not> (p dvd snd (quotient_of (u+v)))\<close> dvd_trans snd_quotient_of_divide 
+              by blast
+            ultimately have \<open>pval p w = 0\<close>
+              by (metis assms pval_unit_dvd_D pval_zero)              
+            moreover have \<open>w \<noteq> 0\<close>
+            proof(rule classical)
+              assume \<open>\<not> (w \<noteq> 0)\<close>
+              hence \<open>w = (0::real)\<close>
+                by auto
+              hence \<open>u + v = (p ^ k) * (0::real)\<close>
+                by (simp add: \<open>of_rat (u + v) = of_nat (p ^ k) * of_rat w\<close>)
+              also have \<open>\<dots> = 0\<close>
+                by simp
+              finally have \<open>u + v = 0\<close>
+                by simp
+              thus ?thesis
+                using \<open>u + v \<noteq> 0\<close>
+                by blast
+            qed
+            ultimately show ?thesis
+              using assms pnorm_pval_zero 
+              by blast               
+          qed
+          ultimately show ?thesis 
+            by blast
+        qed
+        then obtain k::nat and w::rat where \<open>u + v = (p ^ k) * w\<close> and \<open>pnorm p w = 1\<close>
+          by blast
+        have \<open>x + y = (p powr (pval p x)) * (p ^ k) * w\<close>
+          using \<open>x + y = (p powr (pval p x)) * (u + v)\<close>  \<open>u + v = (p ^ k) * w\<close>
+          by simp
+        also have \<open>\<dots> = (p powr (pval p x + k)) * w\<close>
+        proof-
+          have \<open>(p powr (pval p x)) * (p ^ k) = p powr (pval p x + k)\<close>
+          proof-
+            have \<open>(p powr (pval p x)) * (p ^ k) = (p powr (pval p x)) * (p powr k)\<close>
+            proof-
+              have \<open>p powr k = p ^ k\<close>
+                by (simp add: assms powr_realpow prime_gt_0_nat)              
+              thus ?thesis
+                by simp
+            qed
+            also have \<open>\<dots> = p powr (pval p x + k)\<close>
+            proof-
+              have \<open>p > 1\<close>
+                using \<open>prime p\<close> prime_gt_1_nat 
+                by auto
+              thus ?thesis
+                by (simp add: powr_add) 
+            qed
+            finally show ?thesis
+              by simp
+          qed
+          thus ?thesis 
+            by simp
+        qed
+        finally have \<open>x + y = (p powr (pval p x + k)) * w\<close>
+          by blast
+        hence \<open>pval p (x + y) = pval p x + k\<close>
+          using \<open>pnorm p w = 1\<close>
+          by (smt assms pnorm_eq_zero_D pnorm_pval_zero pval_uniq)
+        hence \<open>- pval p (x + y) \<le> - pval p x\<close>
+          by auto
+        have \<open>p powr (- pval p (x + y)) \<le> p powr (- pval p x)\<close>
+        proof-
+          have \<open>p > 1\<close>
+            using \<open>prime p\<close> prime_gt_1_nat 
+            by auto
+          thus ?thesis 
+            using \<open>- pval p (x + y) \<le> - pval p x\<close>
+            by auto
+        qed
+        thus ?thesis
+          using False \<open>pnorm p x = pnorm p y\<close> \<open>x \<noteq> 0\<close> pnorm_simplified 
+          by auto
+      qed
+    qed
+  } note eq = this
+
+  {
+    have \<open>pnorm p x < pnorm p y \<Longrightarrow> pnorm p (x + y) \<le> pnorm p y\<close>
+      for x y
+    proof(cases \<open>x = 0\<close>)
+      case True
+      thus ?thesis
+        by auto
+    next
+      case False
+      assume \<open>pnorm p x < pnorm p y\<close>
+      have \<open>x \<noteq> 0\<close> 
+        using False
+        by blast
+      hence \<open>\<exists> u::rat. x = (p powr (pval p x)) * u \<and> pnorm p u = 1\<close>
+        by (simp add: assms pnorm_decomposition)
+      then obtain u::rat where \<open>x = (p powr (pval p x)) * u\<close> and \<open>pnorm p u = 1\<close>
+        by blast
+      have \<open>y \<noteq> 0\<close> 
+        using False
+        by (smt \<open>pnorm p x < pnorm p y\<close> assms pnorm_eq_zero_D pnorm_geq_zero)        
+      hence \<open>\<exists> v::rat. y = (p powr (pval p y)) * v \<and> pnorm p v = 1\<close>
+        by (simp add: assms pnorm_decomposition)
+      then obtain v::rat where \<open>y = (p powr (pval p y)) * v\<close> and \<open>pnorm p v = 1\<close>
+        by blast
+      have \<open>pval p x > pval p y\<close>
+      proof-
+        have \<open>pnorm p x = p powr (- pval p x)\<close>
+          using \<open>x \<noteq> 0\<close>
+          by (simp add: pnorm_simplified)
+        moreover have \<open>pnorm p y = p powr (- pval p y)\<close>
+          using \<open>y \<noteq> 0\<close>
+          by (simp add: pnorm_simplified)
+        moreover have \<open>p > 1\<close>
+          using \<open>prime p\<close> prime_gt_1_nat 
+          by auto
+        ultimately have \<open>-pval p x < -pval p y\<close>
+          using \<open>pnorm p x < pnorm p y\<close> \<open>x \<noteq> 0\<close> \<open>y \<noteq> 0\<close>
+          by simp          
+        thus ?thesis 
+          by simp
+      qed
+      hence \<open>\<exists> l::nat. l = pval p x - pval p y\<close>
+        by presburger
+      then obtain l::nat where \<open>l = pval p x - pval p y\<close>
+        by blast
+      hence \<open>l \<ge> 1\<close>
+        using \<open>pval p x > pval p y\<close>
+        by linarith
+      define w::rat where \<open>w = ((of_nat p) ^ l) * u + v\<close>
+      have \<open>pnorm p w = 1\<close>
+      proof-
+        have \<open>pnorm p (((of_nat p) ^ l) * u) < 1\<close>
+        proof-
+          have \<open>pnorm p ((of_nat p) ^ l) = 1/((of_nat p) ^ l)\<close>
+            using \<open>prime p\<close> pnorm_primepow 
+            by auto
+          also have \<open>\<dots> < 1\<close>
+          proof-
+            have \<open>p > 1\<close>
+              using \<open>prime p\<close> prime_gt_1_nat 
+              by auto
+            thus ?thesis
+              using \<open>l \<ge> 1\<close>
+              by auto 
+          qed
+          finally show ?thesis
+            by (simp add: \<open>pnorm p u = 1\<close> assms pnorm_multiplicativity)            
+        qed
+        thus ?thesis
+          using \<open>pnorm p v = 1\<close> \<open>prime p\<close>
+          by (simp add: add.commute pnorm_unit_ball w_def)
+      qed
+      have \<open>x + y = (p powr (pval p x)) * u + (p powr (pval p y)) * v\<close>
+        by (simp add: \<open>of_rat x = complex_of_real (real p powr real_of_int (pval p x)) * of_rat u\<close> \<open>of_rat y = complex_of_real (real p powr real_of_int (pval p y)) * of_rat v\<close> of_rat_add)
+      also have \<open>\<dots> = (p powr (pval p y)) * (p powr (pval p x - pval p y)) * u + (p powr (pval p y)) * v\<close>
+      proof-
+        have \<open>(p powr (pval p y)) * (p powr (pval p x - pval p y)) 
+            = p powr ( (pval p y) + (pval p x - pval p y) )\<close>
+          using Transcendental.powr_add[where x = p and a = "pval p y" and b = "pval p x - pval p y"]
+          by simp
+        also have \<open>\<dots> = p powr (pval p x)\<close>
+        proof-
+          have \<open>(pval p y) + (pval p x - pval p y) = pval p x\<close>
+            by simp
+          thus ?thesis 
+            by simp
+        qed
+        finally have \<open>(p powr (pval p y)) * (p powr (pval p x - pval p y)) = p powr (pval p x)\<close>
+          by blast
+        thus ?thesis
+          by simp
+      qed
+      also have \<open>\<dots> = (p powr (pval p y)) * ( (p powr (pval p x - pval p y)) * u + v)\<close>
+        by (simp add: linordered_field_class.sign_simps(18))
+      also have \<open>\<dots> = (p powr (pval p y)) * ( (p powr l) * u + v)\<close>
+        using \<open>l = pval p x - pval p y\<close>
+        by (metis of_int_of_nat_eq)
+      also have \<open>\<dots> = (p powr (pval p y)) * ( (p ^ l) * u + v)\<close>
+      proof-
+        have \<open>p > 1\<close>
+          using \<open>prime p\<close> prime_gt_1_nat 
+          by auto
+        hence \<open>p powr l = p ^ l\<close>
+          by (simp add: powr_realpow)          
+        thus ?thesis 
+          by simp
+      qed
+      also have \<open>\<dots> = (p powr (pval p y)) * w\<close>
+        unfolding w_def
+        by (metis (no_types, lifting) of_nat_power of_rat_add of_rat_mult of_rat_of_nat_eq)
+      finally have \<open>x + y = (p powr (pval p y)) * w\<close>
+        by blast
+      hence \<open>pval p (x + y) = pval p y\<close>
+        by (metis \<open>pnorm p w = 1\<close> assms pnorm_eq_zero_D pnorm_pval_zero_D pval_uniq zero_neq_one)
+      hence \<open>pnorm p (x + y) = pnorm p y\<close>
+      proof(cases \<open>x + y = 0\<close>)
+        case True
+        hence \<open>x = - y\<close>
+          by simp
+        hence \<open>pnorm p x = pnorm p (-y)\<close>
+          by simp
+        thus ?thesis
+          using \<open>pnorm p x < pnorm p y\<close>
+          by (metis True \<open>pval p (x + y) = pval p y\<close> add.commute assms pnorm_pval_zero
+              pnorm_unit_ball pval_zero)                     
+      next
+        case False
+        thus ?thesis 
+          using \<open>y \<noteq> 0\<close>
+          using \<open>pval p (x + y) = pval p y\<close> pval_pnorm 
+          by blast
+      qed
+      thus \<open>pnorm p (x + y) \<le> pnorm p y\<close>
+        by auto
+    qed  } note less = this
+
+  show ?thesis
+  proof(cases \<open>pnorm p x \<le> pnorm p y\<close>)
+    case True
+    thus ?thesis
+    proof(cases \<open>pnorm p x = pnorm p y\<close>)
+      case True
+      thus ?thesis
+        using eq
+        by simp
+    next
+      case False
+      hence \<open>pnorm p x < pnorm p y\<close>
+        using \<open>pnorm p x \<le> pnorm p y\<close>
+        by auto
+      thus ?thesis
+        using less
+        by fastforce           
+    qed
+  next
+    case False
+    hence \<open>pnorm p y < pnorm p x\<close>
+      by simp
+    thus ?thesis
+      using less add.commute
+      by smt
+  qed
+qed
+
 
 lemma pnorm_ultratriangular_sum:
   fixes p::nat and A::\<open>nat set\<close> and x::\<open>nat \<Rightarrow> rat\<close>
@@ -1549,7 +2018,5 @@ proof-
     using 1 
     by blast
 qed
-
-
 
 end
