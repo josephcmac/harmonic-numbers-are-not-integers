@@ -31,7 +31,7 @@ fun harmonic :: \<open>nat \<Rightarrow> rat\<close> where
   \<open>harmonic (Suc n) = harmonic n + Fract 1 (Suc n)\<close>
 
 lemma harmonic_explicit:
-  \<open>harmonic n = (\<Sum>k = 1..n. (Fract 1 (of_nat k)) )\<close>
+  \<open>harmonic n = (\<Sum>k = 1..n. (Fract 1 (of_nat k)))\<close>
 proof(induction n)
   case 0
   thus ?case
@@ -40,6 +40,22 @@ next
   case (Suc n)
   thus ?case
     by simp 
+qed
+
+lemma harmonic_diff_explicit:
+  \<open>n \<ge> m+1 \<Longrightarrow> harmonic n - harmonic m = (\<Sum>k = m+1..n. (Fract 1 (of_nat k)))\<close>
+proof-
+  assume \<open>n \<ge> m+1\<close>
+  then obtain k::nat where \<open>n = m + 1 + k\<close>
+    using le_Suc_ex 
+    by blast    
+  show ?thesis
+  proof -
+    have "\<forall>n na f nb. \<not> (n::nat) \<le> na + 1 \<or> sum f {n..na + nb} = (sum f {n..na}::rat) + sum f {na + 1..na + nb}"
+      by (meson sum.ub_add_nat)
+    then show ?thesis
+      by (metis (no_types) \<open>n = m + 1 + k\<close> add_diff_cancel_left' harmonic_explicit le_add2 linordered_field_class.sign_simps(1))
+  qed 
 qed
 
 subsection \<open>Auxiliary result\<close>
@@ -54,9 +70,35 @@ lemma sum_last:
 
 lemma harmonic_numbers_2norm:
   fixes n :: nat
-  assumes \<open>n \<ge> 2\<close>
+  assumes \<open>n \<ge> 1\<close>
   shows \<open>pnorm 2 (harmonic n) = 2^(nat(\<lfloor>log 2 n\<rfloor>))\<close>
-proof-
+proof(cases \<open>n = 1\<close>)
+  case True
+  have \<open>prime (2::nat)\<close>
+    by simp
+  hence \<open>harmonic (1::nat) = 1\<close>
+    by (simp add: One_rat_def)
+  hence \<open>pnorm 2 (harmonic (1::nat)) = pnorm 2 1\<close>
+    by simp
+  also have \<open>\<dots> = 1\<close>
+    by (simp add: pnorm_1)
+  also have \<open>\<dots> = 2^(nat(\<lfloor>log 2 1\<rfloor>))\<close>
+  proof-
+    have \<open>log 2 1 = 0\<close>
+      by simp
+    hence \<open>\<lfloor>log 2 1\<rfloor> = 0\<close>
+      by simp      
+    thus ?thesis
+      by auto
+  qed
+  finally show ?thesis
+    using \<open>n = 1\<close>
+    by auto
+next
+  case False
+  hence \<open>n \<ge> 2\<close>
+    using \<open>n \<ge> 1\<close>
+    by auto
   define l where \<open>l = nat(\<lfloor>log 2 n\<rfloor>)\<close>
   define H where \<open>H = (\<Sum>k = 1..n. (Fract 1 (of_nat k)))\<close>
   have \<open>prime (2::nat)\<close>
@@ -624,7 +666,7 @@ theorem Taeisinger:
   shows \<open>harmonic n \<notin> \<int>\<close>
 proof-
   have \<open>pnorm 2 (\<Sum>k = 1..n. (Fract 1 (of_nat k)) ) > 1\<close>
-    using harmonic_numbers_2norm[where n = "n"]  \<open>n \<ge> 2\<close> harmonic_explicit 
+    using harmonic_numbers_2norm[where n = "n"] \<open>n \<ge> 2\<close> harmonic_explicit 
     by auto    
   thus ?thesis
   proof -
@@ -640,7 +682,186 @@ theorem Kurschak:
   fixes n m :: nat
   assumes \<open>m + 2 \<le> n\<close>
   shows \<open>harmonic n - harmonic m \<notin> \<int>\<close>
-  sorry
+proof(cases \<open>2*m \<le> n\<close>)
+  case True
+  show ?thesis
+  proof(cases \<open>m = 0\<close>)
+    case True
+    thus ?thesis
+      using Taeisinger assms 
+      by auto 
+  next
+    case False
+    hence \<open>m \<ge> 1\<close>
+      by simp
+    have \<open>n \<ge> 2\<close>
+      using \<open>m+2 \<le> n\<close>
+      by auto
+    have \<open>prime (2::nat)\<close>
+      by auto
+    have \<open>harmonic n = (harmonic n - harmonic m) + (harmonic m)\<close>
+      by simp
+    hence \<open>pnorm 2 (harmonic n) \<le> max (pnorm 2 (harmonic n - harmonic m)) (pnorm 2 (harmonic m))\<close>
+      using \<open>prime 2\<close> pnorm_ultratriangular[where p = "2::nat" and x = "harmonic n - harmonic m" 
+          and y = "harmonic m"]
+      by auto
+    moreover have \<open>pnorm 2 (harmonic m) < pnorm 2 (harmonic n)\<close>
+    proof-
+      have \<open>pnorm 2 (harmonic m) =  2 ^ nat \<lfloor>log 2 (real m)\<rfloor>\<close>
+        using harmonic_numbers_2norm[where n = "n"] \<open>m \<ge> 1\<close>
+        by (meson \<open>1 \<le> m\<close> harmonic_numbers_2norm)
+      moreover have \<open>pnorm 2 (harmonic n) =  2 ^ nat \<lfloor>log 2 (real n)\<rfloor>\<close>
+        using harmonic_numbers_2norm[where n = "n"] \<open>2 \<le> n\<close> 
+        by linarith
+      moreover have \<open>(2::nat) ^ nat \<lfloor>log 2 (real m)\<rfloor> < (2::nat) ^ nat \<lfloor>log 2 (real n)\<rfloor>\<close>
+      proof-
+        have \<open>log 2 (real m) + 1 = log 2 (real m) + log 2 (2::real)\<close>
+        proof-
+          have \<open>log 2 (real 2) = 1\<close>
+            by simp
+          thus ?thesis 
+            by simp
+        qed
+        also have \<open>\<dots> = log 2 ((real m) * (2::real)) \<close>
+        proof-
+          have \<open>(2::real) > 0\<close>
+            by simp
+          moreover have \<open>(2::real) \<noteq> 1\<close>
+            by simp
+          moreover have \<open>m > 0\<close>
+            using False 
+            by auto            
+          ultimately show ?thesis
+            using log_mult[where a = 2 and x = "real m" and y = "2::real"]
+            by simp
+        qed
+        also have \<open>\<dots> = log 2 (2*real m) \<close>
+        proof-
+          have \<open>(real m)*(2::real) = 2*m\<close>
+            by auto
+          thus ?thesis
+            by (simp add: \<open>real m * 2 = real (2 * m)\<close>)             
+        qed
+        also have \<open>\<dots> \<le> log 2 (real n)\<close>
+          using \<open>2*m \<le> n\<close>  \<open>m \<noteq> 0\<close>
+          by auto
+        finally have \<open>log 2 (real m) + 1 \<le> log 2 (real n)\<close>
+          by blast
+        hence \<open>\<lfloor>log 2 (real m)\<rfloor> < \<lfloor>log 2 (real n)\<rfloor>\<close>
+          by linarith          
+        moreover have \<open>(2::nat) > 1\<close>
+          by auto
+        ultimately show ?thesis
+          by (smt \<open>1 \<le> m\<close> floor_less_zero log_less_zero_cancel_iff nat_mono_iff of_nat_1 
+              of_nat_mono power_strict_increasing)
+      qed
+      ultimately show ?thesis 
+        by auto
+    qed
+    ultimately have \<open>pnorm 2 (harmonic n) \<le> pnorm 2 (harmonic n - harmonic m)\<close>
+      by linarith
+    moreover have \<open>1 < pnorm 2 (harmonic n)\<close>
+      using harmonic_numbers_2norm[where n = "n"] \<open>n \<ge> 2\<close>
+      by auto
+    ultimately have \<open>1 < pnorm 2 (harmonic n - harmonic m) \<close>
+      by auto
+    thus ?thesis
+      using integers_pnorm_D[where p = "2::nat" and x = "harmonic n - harmonic m"] \<open>prime 2\<close>
+      by auto      
+  qed
+next
+  case False
+  have explicit: \<open>harmonic n - harmonic m = (\<Sum>k = m + 1..n. Fract 1 (int k))\<close>
+    using \<open>n \<ge> m + 2\<close> harmonic_diff_explicit[where m = m and n = n]
+    by linarith
+  have \<open>harmonic n - harmonic m < 1\<close>
+  proof-
+    have \<open>(\<Sum>k = m + 1..n. Fract 1 (int k)) < 1\<close>
+    proof-
+      have \<open>finite {m + 1..n}\<close>
+        by simp
+      moreover have \<open>{m + 1..n} \<noteq> {}\<close>
+        using \<open>m+2 \<le> n\<close>
+        by simp
+      moreover have \<open>k \<in> {m + 1..n} \<Longrightarrow> Fract 1 k \<le> Fract 1 (m+1)\<close>
+        for k
+      proof-
+        assume \<open>k \<in> {m + 1..n}\<close>
+        have \<open>k \<ge> m+1\<close>
+          using \<open>k \<in> {m + 1..n}\<close>
+          by auto
+        thus ?thesis
+          by auto
+      qed
+      ultimately have \<open>(\<Sum>k = m + 1..n. Fract 1 k) \<le> of_nat (card {m + 1..n})*Fract 1 (int (m + 1))\<close>
+        using  Groups_Big.sum_bounded_above[where A = "{m+1..n}" and K = "Fract 1 (m+1)"
+            and f = "\<lambda> k. Fract 1 k"]
+        by auto
+      also  have \<open>\<dots> \<le> of_nat m*Fract 1 ((m + 1))\<close>
+      proof-
+        have \<open>card {m+1..n} \<le> m\<close>
+        proof-
+          have \<open>card {m+1..n} = n - m\<close>
+            by auto
+          thus ?thesis
+            using False
+            by simp
+        qed
+        moreover have \<open>card  {m + 1..n} > 0\<close>
+          using \<open>{m + 1..n} \<noteq> {}\<close> card_gt_0_iff 
+          by blast          
+        ultimately show ?thesis
+          by (smt add_is_0 less_eq_rat_def mult_mono of_nat_0_le_iff of_nat_le_0_iff of_nat_mono 
+              zero_le_Fract_iff)
+      qed
+      also have \<open>\<dots> < 1\<close>
+      proof -
+        have "Fract (int m * 1) (int (1 + m)) < 1"
+          by (simp add: Fract_less_one_iff)
+        then show ?thesis
+          by (metis (no_types) Fract_of_nat_eq add.commute mult.left_neutral mult_rat)
+      qed
+      finally show ?thesis
+        by blast
+    qed
+    thus ?thesis
+      using explicit 
+      by simp
+  qed
+  moreover have \<open>0 < harmonic n - harmonic m\<close>
+  proof-
+    have \<open>finite {m + 1..n}\<close>
+      by simp
+    moreover have \<open>{m + 1..n} \<noteq> {}\<close>
+      using \<open>m+2 \<le> n\<close>
+      by simp
+    moreover have \<open>k \<in> {m + 1..n} \<Longrightarrow> 0 < Fract 1 k\<close>
+      for k
+    proof-
+      assume \<open>k \<in> {m + 1..n}\<close>
+      hence \<open>k \<ge> 1\<close>
+        by auto
+      thus ?thesis
+        by (simp add: zero_less_Fract_iff) 
+    qed
+    ultimately have \<open>0 < (\<Sum>k = m + 1..n. Fract 1 k)\<close>
+      using Groups_Big.ordered_comm_monoid_add_class.sum_pos[where I = "{m+1..n}" 
+          and f = "\<lambda> k. Fract 1 k"]
+      by blast
+    thus ?thesis
+      using explicit 
+      by simp
+  qed
+  ultimately show ?thesis
+  proof -
+    have f1: "sgn (harmonic n - harmonic m) = 1"
+      by (metis \<open>0 < harmonic n - harmonic m\<close> sgn_pos)
+    have "0 \<le> harmonic n - harmonic m"
+      by (metis \<open>0 < harmonic n - harmonic m\<close> less_eq_rat_def)
+    thus ?thesis
+      using f1 by (metis (no_types) Ints_0 \<open>harmonic n - harmonic m < 1\<close> eq_iff_diff_eq_0 frac_eq_0_iff frac_unique_iff sgn_if zero_neq_one)
+  qed    
+qed
 
 end
 
