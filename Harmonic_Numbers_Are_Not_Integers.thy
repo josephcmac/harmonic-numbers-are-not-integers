@@ -254,7 +254,7 @@ next
            = pnorm 2 (sum (\<lambda> k. Fract (2 ^ l) (int k)) {1..(2::nat)^l-1})\<close>
           by blast
         also have \<open>\<dots> \<le> Max ((\<lambda> k. pnorm 2 (Fract (2 ^ l) (int k)))`{1..2^l-1})\<close>
-          using \<open>prime 2\<close>  pnorm_ultratriangular_sum[where p = 2 and A = \<open>{1..2^l-1}\<close> 
+          using \<open>prime 2\<close>  pnorm_ultrametric_sum[where p = 2 and A = \<open>{1..2^l-1}\<close> 
               and x = \<open>(\<lambda> k. (Fract (2 ^ l) (int k)))\<close>]
           by (metis Nat.le_diff_conv2 \<open>2 \<le> 2 ^ l\<close> atLeastatMost_empty_iff2 finite_atLeastAtMost 
               nat_1_add_1 one_le_power prime_ge_1_nat)
@@ -447,7 +447,7 @@ next
           using True 
           by auto          
         ultimately show ?thesis 
-          using \<open>prime 2\<close>  pnorm_ultratriangular_sum[where p = 2 and A = \<open>{2 ^ l + 1..n}\<close> 
+          using \<open>prime 2\<close>  pnorm_ultrametric_sum[where p = 2 and A = \<open>{2 ^ l + 1..n}\<close> 
               and x = \<open>(\<lambda> k. (2 ^ l)*(Fract 1 k))\<close>]
           by auto
       qed
@@ -702,7 +702,7 @@ proof(cases \<open>2*m \<le> n\<close>)
     have \<open>harmonic n = (harmonic n - harmonic m) + (harmonic m)\<close>
       by simp
     hence \<open>pnorm 2 (harmonic n) \<le> max (pnorm 2 (harmonic n - harmonic m)) (pnorm 2 (harmonic m))\<close>
-      using \<open>prime 2\<close> pnorm_ultratriangular[where p = "2::nat" and x = "harmonic n - harmonic m" 
+      using \<open>prime 2\<close> pnorm_ultrametric[where p = "2::nat" and x = "harmonic n - harmonic m" 
           and y = "harmonic m"]
       by auto
     moreover have \<open>pnorm 2 (harmonic m) < pnorm 2 (harmonic n)\<close>

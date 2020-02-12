@@ -1,0 +1,8 @@
+Rewrite the file
+
+Harmonic_Numbers_Are_Not_Integers.thy
+
+using the results from
+
+https://isabelle.in.tum.de/dist/library/HOL/HOL-Analysis/Harmonic_Numbers.html
+
